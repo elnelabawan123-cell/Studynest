@@ -61,4 +61,41 @@ class ActivityLogController extends Controller
             ],
         ]);
     }
+
+    public function store(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'action'      => ['required', 'string', 'max:100'],
+            'module'      => ['nullable', 'string', 'max:100'],
+            'description' => ['required', 'string', 'max:500'],
+        ]);
+
+        $log = ActivityLog::record(
+            $data['action'],
+            $data['module'] ?? 'General',
+            $data['description'],
+            $request->user()?->id,
+            $request->user()?->role,
+            $request->ip()
+        );
+
+        return response()->json([
+            'success' => true,
+            'data'    => $log,
+        ], 201);
+    }
+
+    public function summary(Request $request): JsonResponse
+    {
+        $total = ActivityLog::count();
+        $today = ActivityLog::whereDate('created_at', today())->count();
+
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'total_logs' => $total,
+                'today_logs' => $today,
+            ],
+        ]);
+    }
 }
