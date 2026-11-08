@@ -7,8 +7,8 @@ use App\Http\Requests\StoreActivityRequest;
 use App\Http\Requests\UpdateActivityRequest;
 use App\Http\Resources\ActivityResource;
 use App\Models\Activity;
-use App\Models\Activitylog;
-use App\Models\Auditlog;
+use App\Models\ActivityLog;
+use App\Models\AuditLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 
 class ActivityController extends Controller
 {
-    // ── GET /api/teacher/activities ───────────────────────────────────────────
+    // â”€â”€ GET /api/teacher/activities â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public function index(Request $request): JsonResponse
     {
         $teacherId = $request->user()->id;
@@ -39,7 +39,7 @@ class ActivityController extends Controller
         return ActivityResource::collection($activities)->response();
     }
 
-    // ── POST /api/teacher/activities ──────────────────────────────────────────
+    // â”€â”€ POST /api/teacher/activities â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public function store(StoreActivityRequest $request): JsonResponse
     {
         $data               = $request->validated();
@@ -68,14 +68,14 @@ class ActivityController extends Controller
         $notifText = "You created {$activity->type} \"{$activity->title}\".";
         $auditText = "Teacher \"{$user->name}\" created {$activity->type} \"{$activity->title}\" (ID: {$activity->id}).";
 
-        Activitylog::record(
+        ActivityLog::record(
             action:      'CREATE_ACTIVITY',
             module:      'Activities',
             description: $notifText,
         );
 
-        Auditlog::record(
-            action:      Auditlog::ACTION_CREATE,
+        AuditLog::record(
+            action:      AuditLog::ACTION_CREATE,
             tableName:   'activities',
             recordId:    $activity->id,
             oldValue:    [],
@@ -93,14 +93,14 @@ class ActivityController extends Controller
             ->setStatusCode(Response::HTTP_CREATED);
     }
 
-    // ── GET /api/teacher/activities/{activity} ────────────────────────────────
+    // â”€â”€ GET /api/teacher/activities/{activity} â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public function show(Request $request, Activity $activity): JsonResponse
     {
         $this->authorizeTeacher($request, $activity);
 
         // Note: VIEW logs are NOT surfaced in the bell (would be too noisy),
         // but they are kept here for the Activity Log page.
-        Activitylog::record(
+        ActivityLog::record(
             action:      'VIEW_ACTIVITY',
             module:      'Activities',
             description: "{$request->user()->name} viewed {$activity->type} \"{$activity->title}\".",
@@ -109,11 +109,11 @@ class ActivityController extends Controller
         return (new ActivityResource($activity->load(['subject', 'quizQuestions'])))->response();
     }
 
-    // ── PUT/PATCH /api/teacher/activities/{activity} ──────────────────────────
+    // â”€â”€ PUT/PATCH /api/teacher/activities/{activity} â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public function update(UpdateActivityRequest $request, Activity $activity): JsonResponse
     {
         // Once students can see/answer it (Open) or it's been Closed, its
-        // content is locked — editing title/questions/points out from
+        // content is locked â€” editing title/questions/points out from
         // under students who already have it open (or already answered)
         // would be unfair and could invalidate real submissions. Draft and
         // Scheduled (not yet open, no one has seen it) stay editable.
@@ -150,14 +150,14 @@ class ActivityController extends Controller
         $notifText = "You edited {$activity->type} \"{$activity->title}\".";
         $auditText = "Teacher \"{$user->name}\" edited {$activity->type} \"{$activity->title}\" (ID: {$activity->id}).";
 
-        Activitylog::record(
+        ActivityLog::record(
             action:      'EDIT_ACTIVITY',
             module:      'Activities',
             description: $notifText,
         );
 
-        Auditlog::record(
-            action:      Auditlog::ACTION_UPDATE,
+        AuditLog::record(
+            action:      AuditLog::ACTION_UPDATE,
             tableName:   'activities',
             recordId:    $activity->id,
             oldValue:    $oldValues,
@@ -173,7 +173,7 @@ class ActivityController extends Controller
         return (new ActivityResource($activity->fresh(['subject', 'quizQuestions'])))->response();
     }
 
-    // ── DELETE /api/teacher/activities/{activity} ─────────────────────────────
+    // â”€â”€ DELETE /api/teacher/activities/{activity} â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public function destroy(Request $request, Activity $activity): JsonResponse
     {
         $this->authorizeTeacher($request, $activity);
@@ -195,14 +195,14 @@ class ActivityController extends Controller
         $notifText = "You deleted {$type} \"{$title}\".";
         $auditText = "Teacher \"{$user->name}\" deleted {$type} \"{$title}\" (ID: {$actId}).";
 
-        Activitylog::record(
+        ActivityLog::record(
             action:      'DELETE_ACTIVITY',
             module:      'Activities',
             description: $notifText,
         );
 
-        Auditlog::record(
-            action:      Auditlog::ACTION_DELETE,
+        AuditLog::record(
+            action:      AuditLog::ACTION_DELETE,
             tableName:   'activities',
             recordId:    $actId,
             oldValue:    $oldValues,
@@ -213,7 +213,7 @@ class ActivityController extends Controller
         return response()->json(['message' => 'Activity deleted.']);
     }
 
-    // ── POST /api/teacher/activities/{activity}/close ─────────────────────────
+    // â”€â”€ POST /api/teacher/activities/{activity}/close â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public function close(Request $request, Activity $activity): JsonResponse
     {
         $this->authorizeTeacher($request, $activity);
@@ -232,14 +232,14 @@ class ActivityController extends Controller
         $notifText = "You closed {$activity->type} \"{$activity->title}\".";
         $auditText = "Teacher \"{$user->name}\" closed {$activity->type} \"{$activity->title}\" (ID: {$activity->id}).";
 
-        Activitylog::record(
+        ActivityLog::record(
             action:      'CLOSE_ACTIVITY',
             module:      'Activities',
             description: $notifText,
         );
 
-        Auditlog::record(
-            action:      Auditlog::ACTION_UPDATE,
+        AuditLog::record(
+            action:      AuditLog::ACTION_UPDATE,
             tableName:   'activities',
             recordId:    $activity->id,
             oldValue:    ['status' => $oldStatus],
@@ -250,7 +250,7 @@ class ActivityController extends Controller
         return (new ActivityResource($activity->fresh(['subject', 'quizQuestions'])))->response();
     }
 
-    // ── POST /api/teacher/activities/{activity}/toggle-status ─────────────────
+    // â”€â”€ POST /api/teacher/activities/{activity}/toggle-status â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public function toggleStatus(Request $request, Activity $activity): JsonResponse
     {
         $this->authorizeTeacher($request, $activity);
@@ -279,14 +279,14 @@ class ActivityController extends Controller
         $notifText = "You changed {$activity->type} \"{$activity->title}\" from {$oldStatus} to {$next}.";
         $auditText = "Teacher \"{$user->name}\" changed {$activity->type} \"{$activity->title}\" (ID: {$activity->id}) status from {$oldStatus} to {$next}.";
 
-        Activitylog::record(
+        ActivityLog::record(
             action:      'TOGGLE_ACTIVITY',
             module:      'Activities',
             description: $notifText,
         );
 
-        Auditlog::record(
-            action:      Auditlog::ACTION_UPDATE,
+        AuditLog::record(
+            action:      AuditLog::ACTION_UPDATE,
             tableName:   'activities',
             recordId:    $activity->id,
             oldValue:    ['status' => $oldStatus],
@@ -297,14 +297,14 @@ class ActivityController extends Controller
         return (new ActivityResource($activity->fresh(['subject', 'quizQuestions'])))->response();
     }
 
-    /* ─── Helpers ────────────────────────────────────────────────────────────── */
+    /* â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
    private function computeStatus(array $data): string
 {
     $now  = now();
     $open = \Carbon\Carbon::parse($data['open_date'] . ' ' . $data['open_time']);
 
-    // due_date no longer closes anything — only close()/toggleStatus()
+    // due_date no longer closes anything â€” only close()/toggleStatus()
     // (teacher actions) can set status to 'Closed'. due_date now only
     // feeds into Submission::is_late at submit time.
     if ($open->gt($now)) return 'Scheduled';

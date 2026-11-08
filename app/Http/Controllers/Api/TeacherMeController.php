@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 use App\Models\Teacher;
-use App\Models\Activitylog;
+use App\Models\ActivityLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -144,7 +144,7 @@ class TeacherMeController extends BaseApiController
 
     public function loginHistory(Request $request): JsonResponse
     {
-        $history = Activitylog::query()
+        $history = ActivityLog::query()
             ->where('user_id', $request->user()->id)
             ->where('module', 'Auth')
             ->whereIn('action', ['LOGIN', 'verified', 'failed'])

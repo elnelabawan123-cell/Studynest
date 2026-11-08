@@ -9,7 +9,7 @@ use App\Models\TeacherActivityLog;
  * Auto-logs teacher actions on activities (Quiz / Assignment / Activity).
  * Registered in App\Providers\AppServiceProvider.
  */
-class ActivityObserver
+class Activityobserver
 {
     public function created(Activity $activity): void
     {

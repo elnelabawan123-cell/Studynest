@@ -9,9 +9,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
-class AdminPasswordController extends Controller
+class AdminpasswordController extends Controller
 {
-    // ── POST /api/admin/change-password ──────────────────────────────────────
+    // â”€â”€ POST /api/admin/change-password â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public function changePassword(Request $request): JsonResponse
     {
         $request->validate([

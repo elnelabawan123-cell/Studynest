@@ -5,8 +5,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreLessonRequest;
 use App\Http\Requests\UpdateLessonRequest;
 use App\Http\Resources\LessonResource;
-use App\Models\Activitylog;
-use App\Models\Auditlog;
+use App\Models\ActivityLog;
+use App\Models\AuditLog;
 use App\Models\Lesson;
 use App\Support\MediaUploadLimits;
 use Illuminate\Http\JsonResponse;
@@ -30,7 +30,7 @@ class LessonController extends Controller
             });
         }
 
-        // 'status' now only ever resolves to scheduled|published — draft is gone.
+        // 'status' now only ever resolves to scheduled|published â€” draft is gone.
         if ($status = $request->query('status')) {
             $query->where('status', strtolower($status));
         }
@@ -48,7 +48,7 @@ class LessonController extends Controller
         return LessonResource::collection($lessons)->response();
     }
 
-    // ── POST /api/teacher/lessons ─────────────────────────────────────────────
+    // â”€â”€ POST /api/teacher/lessons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public function store(StoreLessonRequest $request): JsonResponse
     {
         $data = $request->validated();
@@ -81,19 +81,19 @@ class LessonController extends Controller
         // Friendly bell text vs. formal audit text
         $notifText = $isPublished
             ? "You uploaded and published lesson \"{$lesson->title}\"."
-            : "You uploaded lesson \"{$lesson->title}\" — scheduled for {$lesson->scheduled_at?->format('M j, Y g:i A')}.";
+            : "You uploaded lesson \"{$lesson->title}\" â€” scheduled for {$lesson->scheduled_at?->format('M j, Y g:i A')}.";
         $auditText = $isPublished
             ? "Teacher \"{$user->name}\" uploaded and published lesson \"{$lesson->title}\" (ID: {$lesson->id})."
             : "Teacher \"{$user->name}\" uploaded lesson \"{$lesson->title}\" (ID: {$lesson->id}), scheduled for {$lesson->scheduled_at?->format('M j, Y g:i A')}.";
 
-        Activitylog::record(
+        ActivityLog::record(
             action:      'UPLOAD_LESSON',
             module:      'Lessons',
             description: $notifText,
         );
 
-        Auditlog::record(
-            action:      Auditlog::ACTION_CREATE,
+        AuditLog::record(
+            action:      AuditLog::ACTION_CREATE,
             tableName:   'lessons',
             recordId:    $lesson->id,
             oldValue:    [],
@@ -118,7 +118,7 @@ class LessonController extends Controller
 
         // Note: VIEW logs are NOT surfaced in the bell (would be too noisy),
         // but they are kept here for the Activity Log page.
-        Activitylog::record(
+        ActivityLog::record(
             action:      'VIEW_LESSON',
             module:      'Lessons',
             description: "{$request->user()->name} viewed lesson \"{$lesson->title}\".",
@@ -127,7 +127,7 @@ class LessonController extends Controller
         return (new LessonResource($lesson->load('subject')))->response();
     }
 
-    // ── PUT/PATCH /api/teacher/lessons/{lesson} ───────────────────────────────
+    // â”€â”€ PUT/PATCH /api/teacher/lessons/{lesson} â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public function update(UpdateLessonRequest $request, Lesson $lesson): JsonResponse
     {
         $data = $request->validated();
@@ -140,7 +140,7 @@ class LessonController extends Controller
             'subject'      => $lesson->subject?->name,
         ];
 
-        // Once a lesson is published, its schedule is locked — only content
+        // Once a lesson is published, its schedule is locked â€” only content
         // (title, description, subject, type, file) may still change.
         $wasAlreadyPublished = $lesson->status === 'published';
         if ($wasAlreadyPublished) {
@@ -177,20 +177,20 @@ class LessonController extends Controller
             ? "You edited and published lesson \"{$lesson->title}\"."
             : ($wasAlreadyPublished
                 ? "You edited lesson \"{$lesson->title}\"."
-                : "You edited lesson \"{$lesson->title}\" — scheduled for {$lesson->scheduled_at?->format('M j, Y g:i A')}.");
+                : "You edited lesson \"{$lesson->title}\" â€” scheduled for {$lesson->scheduled_at?->format('M j, Y g:i A')}.");
 
         $auditText = $wasPublishedNow
             ? "Teacher \"{$user->name}\" edited and published lesson \"{$lesson->title}\" (ID: {$lesson->id})."
             : "Teacher \"{$user->name}\" edited lesson \"{$lesson->title}\" (ID: {$lesson->id}).";
 
-        Activitylog::record(
+        ActivityLog::record(
             action:      $wasPublishedNow ? 'PUBLISH_LESSON' : 'EDIT_LESSON',
             module:      'Lessons',
             description: $notifText,
         );
 
-        Auditlog::record(
-            action:      Auditlog::ACTION_UPDATE,
+        AuditLog::record(
+            action:      AuditLog::ACTION_UPDATE,
             tableName:   'lessons',
             recordId:    $lesson->id,
             oldValue:    $oldValues,
@@ -224,7 +224,7 @@ class LessonController extends Controller
             $duration = MediaUploadLimits::videoDurationSeconds($file->getRealPath());
             if ($duration === null) {
                 return response()->json([
-                    'message' => 'Could not read that video\'s length — please try a different file.',
+                    'message' => 'Could not read that video\'s length â€” please try a different file.',
                 ], 422);
             }
             if ($duration > MediaUploadLimits::MAX_VIDEO_SECONDS) {
@@ -238,7 +238,7 @@ class LessonController extends Controller
         return null;
     }
 
-    // ── DELETE /api/teacher/lessons/{lesson} ──────────────────────────────────
+    // â”€â”€ DELETE /api/teacher/lessons/{lesson} â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public function destroy(Request $request, Lesson $lesson): JsonResponse
     {
         $this->authorizeTeacher($request, $lesson);
@@ -264,14 +264,14 @@ class LessonController extends Controller
         $notifText = "You deleted lesson \"{$title}\".";
         $auditText = "Teacher \"{$user->name}\" deleted lesson \"{$title}\" (ID: {$lessonId}).";
 
-        Activitylog::record(
+        ActivityLog::record(
             action:      'DELETE_LESSON',
             module:      'Lessons',
             description: $notifText,
         );
 
-        Auditlog::record(
-            action:      Auditlog::ACTION_DELETE,
+        AuditLog::record(
+            action:      AuditLog::ACTION_DELETE,
             tableName:   'lessons',
             recordId:    $lessonId,
             oldValue:    $oldValues,
@@ -283,19 +283,19 @@ class LessonController extends Controller
     }
 
     // NOTE: the manual `publish()` endpoint has been intentionally removed.
-    // Publishing is now fully automatic — see App\Console\Commands\PublishScheduledLessons,
+    // Publishing is now fully automatic â€” see App\Console\Commands\PublishScheduledLessons,
     // which is scheduled to run every minute in routes/console.php. Remove any
     // corresponding `POST /teacher/lessons/{lesson}/publish` route as well.
 
-    // ── POST /api/lessons/{lesson}/view (student) ─────────────────────────────
+    // â”€â”€ POST /api/lessons/{lesson}/view (student) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public function trackView(Lesson $lesson): JsonResponse
     {
         $lesson->increment('views');
         $user = auth()->user();
 
         if ($user) {
-            // Student action — logged with student's user_id, so not surfaced in teacher's bell.
-            Activitylog::record(
+            // Student action â€” logged with student's user_id, so not surfaced in teacher's bell.
+            ActivityLog::record(
                 action:      'VIEW_LESSON',
                 module:      'Lessons',
                 description: "{$user->name} viewed lesson \"{$lesson->title}\".",
@@ -305,14 +305,14 @@ class LessonController extends Controller
         return response()->json(['views' => $lesson->fresh()->views]);
     }
 
-    // ── POST /api/lessons/{lesson}/download (student) ─────────────────────────
+    // â”€â”€ POST /api/lessons/{lesson}/download (student) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public function trackDownload(Lesson $lesson): JsonResponse
     {
         $lesson->increment('downloads');
         $user = auth()->user();
 
         if ($user) {
-            Activitylog::record(
+            ActivityLog::record(
                 action:      'DOWNLOAD_LESSON',
                 module:      'Lessons',
                 description: "{$user->name} downloaded lesson \"{$lesson->title}\".",

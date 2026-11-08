@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Auditlog;
+use App\Models\AuditLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class AuditLogController extends Controller
 {
-    // ── GET /api/admin/audit-logs ──────────────────────────────────────────────
+    // â”€â”€ GET /api/admin/audit-logs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Purpose : Track who changed what, when, and why.
     //           Covers security events, role changes, data edits/deletes,
     //           and any action requiring accountability.
@@ -22,7 +22,7 @@ class AuditLogController extends Controller
             'date_to' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
         ]);
 
-        $query = Auditlog::with('user:id,name')
+        $query = AuditLog::with('user:id,name')
             ->orderByDesc('created_at');
 
         // Full-text search across description, action, and table name

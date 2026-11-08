@@ -17,9 +17,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *   - Teacher created an assignment
  *   - Student submitted a module
  *
- * @see Auditlog  for security-sensitive and data-accountability events
+ * @see AuditLog  for security-sensitive and data-accountability events
  */
-class Activitylog extends Model
+class ActivityLog extends Model
 {
     // Migration created the table as 'activity_logs'
     protected $table = 'activity_logs';
@@ -28,8 +28,8 @@ class Activitylog extends Model
         'user_id', 'user_role', 'action', 'module', 'description', 'ip_address',
     ];
 
-    // ── Common action constants ────────────────────────────────────────────────
-    // Use these when calling Activitylog::record() so action values stay consistent.
+    // â”€â”€ Common action constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Use these when calling ActivityLog::record() so action values stay consistent.
 
     // Teacher actions
     const ACTION_UPLOAD_LESSON     = 'UPLOAD_LESSON';
@@ -53,13 +53,13 @@ class Activitylog extends Model
     const ACTION_LOGIN             = 'LOGIN';
     const ACTION_LOGOUT            = 'LOGOUT';
 
-    // ── Relationship ───────────────────────────────────────────────────────────
+    // â”€â”€ Relationship â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class)->withDefault(['name' => 'System']);
     }
 
-    // ── Static recorder ───────────────────────────────────────────────────────
+    // â”€â”€ Static recorder â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     /**
      * Record a user activity.
      *

@@ -9,7 +9,7 @@ use App\Models\Lessonstracking;
 use App\Models\Studentactivitysubmission;
 use App\Models\Subject;
 use App\Models\Teacher;
-use App\Models\Teacheractivitylog;
+use App\Models\TeacherActivityLog;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -24,14 +24,14 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TeacherreportController extends Controller
 {
-    /* ───────────────────────────────────────────────────────────────
-     |  SCHEMA NOTES — important for understanding this controller
+    /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+     |  SCHEMA NOTES â€” important for understanding this controller
      |
-     |  users (auth)   → email matches teachers.email
-     |  teachers       → has subjects()  (pivot subject_teacher)
-     |  subjects       → has students()  (pivot subject_student → students.id)
-     |  students       → has user_id → users.id (for the name display)
-     |  ─────────────────────────────────────────────────────────────── */
+     |  users (auth)   â†’ email matches teachers.email
+     |  teachers       â†’ has subjects()  (pivot subject_teacher)
+     |  subjects       â†’ has students()  (pivot subject_student â†’ students.id)
+     |  students       â†’ has user_id â†’ users.id (for the name display)
+     |  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
     /**
      * Resolve the Teacher row for the authenticated user.
@@ -45,9 +45,9 @@ class TeacherreportController extends Controller
         return $teacher;
     }
 
-    /* ═══════════════════════════════════════════════════════════════ *
-     *  1. SUBJECTS — only those assigned to the logged-in teacher     *
-     * ═══════════════════════════════════════════════════════════════ */
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• *
+     *  1. SUBJECTS â€” only those assigned to the logged-in teacher     *
+     * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     public function subjects(Request $request): JsonResponse
     {
         $teacher = $this->resolveTeacher($request);
@@ -150,9 +150,9 @@ class TeacherreportController extends Controller
         ]);
     }
 
-    /* ═══════════════════════════════════════════════════════════════ *
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• *
      *  2. STUDENT LESSON & ACTIVITY REPORT                            *
-     * ═══════════════════════════════════════════════════════════════ */
+     * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     public function studentLessonActivity(Request $request): JsonResponse
     {
         $teacher   = $this->resolveTeacher($request);
@@ -163,7 +163,7 @@ class TeacherreportController extends Controller
 
         $this->ensureOwnsSubject($teacher->id, $subjectId);
 
-        // Students enrolled in this subject (via subject_student → students)
+        // Students enrolled in this subject (via subject_student â†’ students)
         $studentRows = $this->enrolledStudents($subjectId, $studentId);
 
         $rows = $studentRows->map(function ($student) use ($subjectId, $from, $to) {
@@ -205,11 +205,11 @@ class TeacherreportController extends Controller
                 'lessons_viewed'     => $views,
                 'lessons_downloaded' => $downloads,
                 'lesson_titles'      => $lessonTitles,
-                'assignment_status'  => $assignment?->status ?? '—',
-                'task_status'        => $task?->status ?? '—',
-                'quiz_status'        => $quiz?->status ?? '—',
-                'score'              => $quiz?->score ?? $assignment?->score ?? '—',
-                'date_completed'     => $lastSubmitted ? Carbon::parse($lastSubmitted)->format('M j, Y') : '—',
+                'assignment_status'  => $assignment?->status ?? 'â€”',
+                'task_status'        => $task?->status ?? 'â€”',
+                'quiz_status'        => $quiz?->status ?? 'â€”',
+                'score'              => $quiz?->score ?? $assignment?->score ?? 'â€”',
+                'date_completed'     => $lastSubmitted ? Carbon::parse($lastSubmitted)->format('M j, Y') : 'â€”',
                 'remarks'            => $this->buildRemarks($views, $downloads, $assignment, $task, $quiz),
             ];
         });
@@ -225,9 +225,9 @@ class TeacherreportController extends Controller
         ]);
     }
 
-    /* ═══════════════════════════════════════════════════════════════ *
-     *  3. WEEKLY TEACHER ACTIVITY REPORT — grouped by subject + day   *
-     * ═══════════════════════════════════════════════════════════════ */
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• *
+     *  3. WEEKLY TEACHER ACTIVITY REPORT â€” grouped by subject + day   *
+     * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     public function weeklyActivity(Request $request): JsonResponse
     {
         $teacher   = $this->resolveTeacher($request);
@@ -244,7 +244,7 @@ class TeacherreportController extends Controller
         // but our auth user IS the teacher in this app.
         $authUserId = $request->user()->id;
 
-        $query = Teacheractivitylog::where('teacher_id', $authUserId)
+        $query = TeacherActivityLog::where('teacher_id', $authUserId)
             ->whereBetween('created_at', [$weekStart, $weekEnd->copy()->endOfDay()])
             ->with('subject:id,name,grade_level')
             ->orderBy('created_at');
@@ -295,9 +295,9 @@ class TeacherreportController extends Controller
         ]);
     }
 
-    /* ═══════════════════════════════════════════════════════════════ *
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• *
      *  4. SUBJECT REPORT                                               *
-     * ═══════════════════════════════════════════════════════════════ */
+     * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     public function subjectReport(Request $request): JsonResponse
     {
         $teacher   = $this->resolveTeacher($request);
@@ -314,7 +314,7 @@ class TeacherreportController extends Controller
         $subject = Subject::findOrFail($subjectId);
         $authUserId = $request->user()->id;
 
-        $logsQuery = Teacheractivitylog::where('teacher_id', $authUserId)
+        $logsQuery = TeacherActivityLog::where('teacher_id', $authUserId)
             ->where('subject_id', $subjectId);
         if ($from) $logsQuery->where('created_at', '>=', $from);
         if ($to)   $logsQuery->where('created_at', '<=', $to->copy()->endOfDay());
@@ -357,7 +357,7 @@ class TeacherreportController extends Controller
                 'assignments_submitted' => $assignmentSubs,
                 'tasks_completed'       => $taskSubs,
                 'quizzes_taken'         => $quizSubs,
-                'average_score'         => $avgScore !== null ? round((float) $avgScore, 2) : '—',
+                'average_score'         => $avgScore !== null ? round((float) $avgScore, 2) : 'â€”',
                 'completion_status'     => $this->completionLabel($total),
                 'remarks'               => $this->studentRemarks($avgScore, $total),
             ];
@@ -389,9 +389,9 @@ class TeacherreportController extends Controller
         ]);
     }
 
-    /* ═══════════════════════════════════════════════════════════════ *
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• *
      *  5. SINGLE STUDENT REPORT                                        *
-     * ═══════════════════════════════════════════════════════════════ */
+     * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     public function studentReport(Request $request): JsonResponse
     {
         $teacher   = $this->resolveTeacher($request);
@@ -486,9 +486,9 @@ class TeacherreportController extends Controller
         ]);
     }
 
-    /* ═══════════════════════════════════════════════════════════════ *
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• *
      *  6. EXPORT (PDF or Word)                                         *
-     * ═══════════════════════════════════════════════════════════════ */
+     * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     public function export(Request $request)
     {
         $reportType = $request->string('report_type')->toString();
@@ -527,7 +527,7 @@ class TeacherreportController extends Controller
         $phpWord = new PhpWord();
         $section = $phpWord->addSection();
 
-        $section->addText('StudyNest — Teacher Report', ['bold' => true, 'size' => 18], ['alignment' => Jc::CENTER]);
+        $section->addText('StudyNest â€” Teacher Report', ['bold' => true, 'size' => 18], ['alignment' => Jc::CENTER]);
         $section->addText($this->prettyReportTitle($reportType), ['bold' => true, 'size' => 14], ['alignment' => Jc::CENTER]);
         $section->addText('Generated: ' . now()->format('M j, Y h:i A'), ['italic' => true, 'size' => 10], ['alignment' => Jc::CENTER]);
         $section->addTextBreak(1);
@@ -536,19 +536,19 @@ class TeacherreportController extends Controller
             $section->addText('Teacher: ' . $data['teacher']['name'], ['bold' => true, 'size' => 11]);
         }
         if (!empty($data['subject']['name'])) {
-            $section->addText('Subject: ' . $data['subject']['name'] . ' — ' . ($data['subject']['grade_level'] ?? ''), ['size' => 11]);
+            $section->addText('Subject: ' . $data['subject']['name'] . ' â€” ' . ($data['subject']['grade_level'] ?? ''), ['size' => 11]);
         }
         if (!empty($data['student']['name'])) {
             $section->addText('Student: ' . $data['student']['name'], ['size' => 11]);
         }
         if (!empty($data['activity']['title'])) {
-            $section->addText('Task: ' . $data['activity']['title'] . ' — ' . ($data['activity']['type'] ?? ''), ['size' => 11]);
+            $section->addText('Task: ' . $data['activity']['title'] . ' â€” ' . ($data['activity']['type'] ?? ''), ['size' => 11]);
         }
         if (!empty($data['activity_type'])) {
             $section->addText('Task type: ' . $data['activity_type'], ['size' => 11]);
         }
         if (!empty($data['date_from']) || !empty($data['date_to'])) {
-            $section->addText('Date range: ' . ($data['date_from'] ?? '—') . '  to  ' . ($data['date_to'] ?? '—'), ['size' => 11]);
+            $section->addText('Date range: ' . ($data['date_from'] ?? 'â€”') . '  to  ' . ($data['date_to'] ?? 'â€”'), ['size' => 11]);
         }
         $section->addTextBreak(1);
 
@@ -584,7 +584,7 @@ class TeacherreportController extends Controller
         ])->deleteFileAfterSend(true);
     }
 
-    /* ─── Helpers ─────────────────────────────────────────────────── */
+    /* â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
     /** Returns enrolled students for a subject as objects with: id, name, user_id. */
     protected function enrolledStudents(int $subjectId, ?int $singleStudentId = null)
@@ -627,7 +627,7 @@ class TeacherreportController extends Controller
         if ($task?->status === 'Missing')       $bits[] = 'Missing task';
         if ($quiz?->status === 'Missing')       $bits[] = 'Missing quiz';
         if (empty($bits))                       return 'On track';
-        return implode(' · ', $bits);
+        return implode(' Â· ', $bits);
     }
 
     protected function studentRemarks($avgScore, int $totalSubs): string
@@ -651,7 +651,7 @@ class TeacherreportController extends Controller
     protected function avgRound($collection)
     {
         $avg = collect($collection)->filter(fn ($value) => $value !== null && $value !== '')->avg();
-        return $avg !== null ? round((float) $avg, 2) : '—';
+        return $avg !== null ? round((float) $avg, 2) : 'â€”';
     }
 
     protected function prettyActivityType(string $key): string
@@ -696,7 +696,7 @@ class TeacherreportController extends Controller
             foreach (($data['subjects'] ?? []) as $subj) {
                 foreach ($subj['days'] as $day) {
                     if (empty($day['entries'])) {
-                        $rows[] = [$subj['subject'], $day['day'], '—', 'No activity created.', '', '', ''];
+                        $rows[] = [$subj['subject'], $day['day'], 'â€”', 'No activity created.', '', '', ''];
                         continue;
                     }
                     foreach ($day['entries'] as $e) {
@@ -721,8 +721,8 @@ class TeacherreportController extends Controller
             $rows = collect($data['rows'] ?? [])->map(fn ($row) => [
                 $row['student_name'],
                 $row['status'],
-                $row['score'] === null ? '—' : $row['score'] . ($totalPoints ? " / {$totalPoints}" : ''),
-                $row['submitted_at'] ?? '—',
+                $row['score'] === null ? 'â€”' : $row['score'] . ($totalPoints ? " / {$totalPoints}" : ''),
+                $row['submitted_at'] ?? 'â€”',
             ])->all();
             return compact('headers', 'rows');
         }
@@ -734,12 +734,12 @@ class TeacherreportController extends Controller
                 ['Assignments Submitted', $data['assignments_submitted'] ?? 0],
                 ['Tasks Completed',  $data['tasks_completed']  ?? 0],
                 ['Quizzes Taken',    $data['quizzes_taken']    ?? 0],
-                ['Quiz Avg',         $data['scores']['quiz_avg']       ?? '—'],
-                ['Assignment Avg',   $data['scores']['assignment_avg'] ?? '—'],
-                ['Task Avg',         $data['scores']['task_avg']       ?? '—'],
-                ['Overall Avg',      $data['scores']['overall_avg']    ?? '—'],
-                ['Completion',       $data['completion_status']        ?? '—'],
-                ['Remarks',          $data['remarks']                  ?? '—'],
+                ['Quiz Avg',         $data['scores']['quiz_avg']       ?? 'â€”'],
+                ['Assignment Avg',   $data['scores']['assignment_avg'] ?? 'â€”'],
+                ['Task Avg',         $data['scores']['task_avg']       ?? 'â€”'],
+                ['Overall Avg',      $data['scores']['overall_avg']    ?? 'â€”'],
+                ['Completion',       $data['completion_status']        ?? 'â€”'],
+                ['Remarks',          $data['remarks']                  ?? 'â€”'],
                 ['Missing Activities', count($data['missing'] ?? [])],
             ];
             return compact('headers', 'rows');

@@ -5,4 +5,4 @@ nixPkgs = ["php82", "php82Extensions.mbstring", "php82Extensions.xml", "php82Ext
 cmds = ["composer install --no-dev --optimize-autoloader --no-interaction"]
 
 [start]
-cmd = "php artisan serve --host=0.0.0.0 --port=$PORT"
+cmd = "php artisan migrate --force && php artisan db:seed --class=DatabaseSeeder --force && php artisan storage:link --force && php artisan serve --host=0.0.0.0 --port=$PORT"

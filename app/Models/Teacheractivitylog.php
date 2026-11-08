@@ -6,11 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Teacheractivitylog extends Model
+class TeacherActivityLog extends Model
 {
     use HasFactory;
 
-    // Explicit table name — Laravel would otherwise guess "teacheractivitylogs"
+    // Explicit table name â€” Laravel would otherwise guess "teacheractivitylogs"
     protected $table = 'teacher_activity_logs';
 
     protected $fillable = [

@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Teacher;
 use App\Models\Activity;
-use App\Models\Activitylog;
+use App\Models\ActivityLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -28,7 +28,7 @@ class NotificationController extends BaseApiController
             return $this->success($this->buildOwnActivityNotifications($user)->values());
         }
 
-        // ✅ Eager-load subject (with its students) and submissions
+        // âœ… Eager-load subject (with its students) and submissions
         $activities = Activity::whereIn('subject_id', $subjectIds)
             ->whereIn('type', ['Quiz', 'Assignment'])
             ->with(['subject.students', 'submissions'])
@@ -53,7 +53,7 @@ class NotificationController extends BaseApiController
             $action       = $typeLabel === 'Quiz' ? 'took' : 'submitted';
             $nounSingular = $typeLabel === 'Quiz' ? 'Quiz' : 'Assignment';
 
-            // ── Students who already submitted ──
+            // â”€â”€ Students who already submitted â”€â”€
             if ($submittedCount > 0) {
                 $notifications->push([
                     'id'         => ++$id,
@@ -65,7 +65,7 @@ class NotificationController extends BaseApiController
                 ]);
             }
 
-            // ── Deadline near + pending students ──
+            // â”€â”€ Deadline near + pending students â”€â”€
             if ($deadlineNear && $pendingCount > 0 && $subject) {
                 $hoursLeft = max(0, (int) $now->diffInHours($dueDate, false));
 
@@ -99,7 +99,7 @@ class NotificationController extends BaseApiController
                 }
             }
 
-            // ── Activity closed, final tally ──
+            // â”€â”€ Activity closed, final tally â”€â”€
             if ($isPast && $submittedCount > 0) {
                 $notifications->push([
                     'id'         => ++$id,
@@ -112,7 +112,7 @@ class NotificationController extends BaseApiController
             }
         }
 
-        // ── Teacher's own activity log notifications (enroll, lessons, tasks) ──
+        // â”€â”€ Teacher's own activity log notifications (enroll, lessons, tasks) â”€â”€
         $ownActivityNotifs = $this->buildOwnActivityNotifications($user);
         foreach ($ownActivityNotifs as $n) {
             $n['id'] = ++$id;
@@ -131,33 +131,33 @@ class NotificationController extends BaseApiController
     }
 
     /**
-     * Build notifications from the teacher's own Activitylog rows.
+     * Build notifications from the teacher's own ActivityLog rows.
      * Covers student enrollment, lesson uploads/edits/publishes/deletes,
      * and task (quiz/assignment) creation/edits/closures/deletes.
      */
     private function buildOwnActivityNotifications($user)
     {
-        // Action → { title shown in bell, type used for icon/color on frontend }
+        // Action â†’ { title shown in bell, type used for icon/color on frontend }
         $bellActionMap = [
             // Student enrollment (module: teacher_students)
-            'enroll_student'   => ['title' => '✅ Student Enrolled',  'type' => 'enroll'],
-            'unenroll_student' => ['title' => '🚫 Student Removed',   'type' => 'unenroll'],
+            'enroll_student'   => ['title' => 'âœ… Student Enrolled',  'type' => 'enroll'],
+            'unenroll_student' => ['title' => 'ðŸš« Student Removed',   'type' => 'unenroll'],
 
             // Lessons (module: Lessons)
-            'UPLOAD_LESSON'    => ['title' => '📚 Lesson Uploaded',   'type' => 'lesson'],
-            'EDIT_LESSON'      => ['title' => '✏️ Lesson Edited',     'type' => 'lesson'],
-            'PUBLISH_LESSON'   => ['title' => '🚀 Lesson Published',  'type' => 'lesson'],
-            'DELETE_LESSON'    => ['title' => '🗑️ Lesson Deleted',    'type' => 'lesson'],
+            'UPLOAD_LESSON'    => ['title' => 'ðŸ“š Lesson Uploaded',   'type' => 'lesson'],
+            'EDIT_LESSON'      => ['title' => 'âœï¸ Lesson Edited',     'type' => 'lesson'],
+            'PUBLISH_LESSON'   => ['title' => 'ðŸš€ Lesson Published',  'type' => 'lesson'],
+            'DELETE_LESSON'    => ['title' => 'ðŸ—‘ï¸ Lesson Deleted',    'type' => 'lesson'],
 
             // Activities / Tasks (module: Activities)
-            'CREATE_ACTIVITY'  => ['title' => '📋 Task Created',         'type' => 'task'],
-            'EDIT_ACTIVITY'    => ['title' => '✏️ Task Edited',          'type' => 'task'],
-            'CLOSE_ACTIVITY'   => ['title' => '🔒 Task Closed',          'type' => 'task'],
-            'DELETE_ACTIVITY'  => ['title' => '🗑️ Task Deleted',         'type' => 'task'],
-            'TOGGLE_ACTIVITY'  => ['title' => '🔄 Task Status Changed',  'type' => 'task'],
+            'CREATE_ACTIVITY'  => ['title' => 'ðŸ“‹ Task Created',         'type' => 'task'],
+            'EDIT_ACTIVITY'    => ['title' => 'âœï¸ Task Edited',          'type' => 'task'],
+            'CLOSE_ACTIVITY'   => ['title' => 'ðŸ”’ Task Closed',          'type' => 'task'],
+            'DELETE_ACTIVITY'  => ['title' => 'ðŸ—‘ï¸ Task Deleted',         'type' => 'task'],
+            'TOGGLE_ACTIVITY'  => ['title' => 'ðŸ”„ Task Status Changed',  'type' => 'task'],
         ];
 
-        $logs = Activitylog::where('user_id', $user->id)
+        $logs = ActivityLog::where('user_id', $user->id)
             ->whereIn('action', array_keys($bellActionMap))
             ->orderByDesc('created_at')
             ->take(20)

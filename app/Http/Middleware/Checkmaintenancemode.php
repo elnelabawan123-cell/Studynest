@@ -7,7 +7,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class CheckMaintenanceMode
+class Checkmaintenancemode
 {
     /**
      * Block non-admin users when maintenance mode is on.
@@ -20,7 +20,7 @@ class CheckMaintenanceMode
         if ($maintenanceOn) {
             $user = $request->user();
 
-            // Unauthenticated or non-admin → block
+            // Unauthenticated or non-admin â†’ block
             if (!$user || $user->role !== 'admin') {
                 return response()->json([
                     'success' => false,

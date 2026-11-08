@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Models\Student;
 use App\Models\Teacher;
-use App\Models\Activitylog;
-use App\Models\Auditlog;
+use App\Models\ActivityLog;
+use App\Models\AuditLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -19,8 +19,8 @@ class TeacherStudentController extends BaseApiController
      public function allStudents(Request $request): JsonResponse
     {
         $query = Student::query()
-            ->where('status', 'Active')          // ← hide inactive students
-            ->whereHas('user', fn ($q) =>        // ← hide archived users
+            ->where('status', 'Active')          // â† hide inactive students
+            ->whereHas('user', fn ($q) =>        // â† hide archived users
                 $q->whereNull('archived_at')
             );
  
@@ -116,8 +116,8 @@ class TeacherStudentController extends BaseApiController
         $user        = $request->user();
         $description = "Teacher \"{$user->name}\" enrolled student \"{$student->full_name}\" (ID: {$student->id}) into their class.";
 
-        // ── Activity Log (operational history) ──────────────────────────
-        Activitylog::create([
+        // â”€â”€ Activity Log (operational history) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        ActivityLog::create([
             'user_id'     => $user->id,
             'user_role'   => 'teacher',
             'action'      => 'enroll_student',
@@ -125,8 +125,8 @@ class TeacherStudentController extends BaseApiController
             'description' => $description,
         ]);
 
-        // ── Audit Log (accountability / data-change trail) ───────────────
-        Auditlog::create([
+        // â”€â”€ Audit Log (accountability / data-change trail) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        AuditLog::create([
             'user_id'     => $user->id,
             'user_role'   => 'teacher',
             'action'      => 'INSERT',
@@ -160,8 +160,8 @@ class TeacherStudentController extends BaseApiController
         $user        = $request->user();
         $description = "Teacher \"{$user->name}\" removed student \"{$student->full_name}\" (ID: {$student->id}) from their class.";
 
-        // ── Activity Log ──────────────────────────────────────────────────
-        Activitylog::create([
+        // â”€â”€ Activity Log â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        ActivityLog::create([
             'user_id'     => $user->id,
             'user_role'   => 'teacher',
             'action'      => 'unenroll_student',
@@ -169,8 +169,8 @@ class TeacherStudentController extends BaseApiController
             'description' => $description,
         ]);
 
-        // ── Audit Log ─────────────────────────────────────────────────────
-        Auditlog::create([
+        // â”€â”€ Audit Log â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        AuditLog::create([
             'user_id'     => $user->id,
             'user_role'   => 'teacher',
             'action'      => 'DELETE',

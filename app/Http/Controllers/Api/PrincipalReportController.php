@@ -9,7 +9,7 @@ use App\Models\Section;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\Teacher;
-use App\Models\Teacheractivitylog;
+use App\Models\TeacherActivityLog;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -23,15 +23,15 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PrincipalReportController extends Controller
 {
-    /* ═══════════════════════════════════════════════════════════════ *
-     *  1. SCHOOL OVERVIEW — totals across the whole school             *
-     * ═══════════════════════════════════════════════════════════════ */
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• *
+     *  1. SCHOOL OVERVIEW â€” totals across the whole school             *
+     * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     public function schoolOverview(Request $request): JsonResponse
     {
         $from = $request->date('date_from');
         $to   = $request->date('date_to');
 
-        // ── Headcounts ────────────────────────────────────────
+        // â”€â”€ Headcounts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         $totalTeachers       = Teacher::where('status', 'Active')->count();
         $inactiveTeachers    = Teacher::where('status', 'Inactive')->count();
         $totalStudents       = Student::where('status', 'Active')->count();
@@ -39,7 +39,7 @@ class PrincipalReportController extends Controller
         $totalSubjects       = Subject::where('status', 'Active')->count();
         $totalSections       = Section::where('is_active', true)->count();
 
-        // ── Content created (filterable by date range) ───────
+        // â”€â”€ Content created (filterable by date range) â”€â”€â”€â”€â”€â”€â”€
         $lessonsQuery     = Lesson::query();
         $activitiesQuery  = Activity::query();
         if ($from) { $lessonsQuery->where('created_at', '>=', $from); $activitiesQuery->where('created_at', '>=', $from); }
@@ -54,7 +54,7 @@ class PrincipalReportController extends Controller
         $totalAssignments = (clone $activitiesQuery)->where('type', 'Assignment')->count();
         $totalTasks       = (clone $activitiesQuery)->where('type', 'Activity')->count();
 
-        // ── Engagement — average lesson views per student ────
+        // â”€â”€ Engagement â€” average lesson views per student â”€â”€â”€â”€
         $totalViews = DB::table('lessons')->sum('views');
         $avgViews   = $totalStudents > 0 ? round($totalViews / $totalStudents, 1) : 0;
 
@@ -91,9 +91,9 @@ class PrincipalReportController extends Controller
         ]);
     }
 
-    /* ═══════════════════════════════════════════════════════════════ *
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• *
      *  2. TEACHER PERFORMANCE SUMMARY                                  *
-     * ═══════════════════════════════════════════════════════════════ */
+     * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     public function teacherPerformance(Request $request): JsonResponse
     {
         $from = $request->date('date_from');
@@ -129,14 +129,14 @@ class PrincipalReportController extends Controller
             $tasksCount       = (clone $activitiesQuery)->where('type', 'Activity')->count();
 
             // Last activity timestamp (most recent log)
-            $lastActive = Teacheractivitylog::where('teacher_id', $authUserId)
+            $lastActive = TeacherActivityLog::where('teacher_id', $authUserId)
                 ->latest('created_at')
                 ->value('created_at');
 
             return [
                 'teacher_id'        => $t->id,
                 'name'              => $t->name,
-                'subjects'          => $subjectNames->implode(', ') ?: '—',
+                'subjects'          => $subjectNames->implode(', ') ?: 'â€”',
                 'subjects_count'    => $subjectNames->count(),
                 'students_count'    => $studentsCount,
                 'lessons_count'     => $lessonsCount,
@@ -144,7 +144,7 @@ class PrincipalReportController extends Controller
                 'assignments_count' => $assignmentsCount,
                 'tasks_count'       => $tasksCount,
                 'total_activities'  => $quizzesCount + $assignmentsCount + $tasksCount,
-                'last_active'       => $lastActive ? Carbon::parse($lastActive)->format('M j, Y') : '—',
+                'last_active'       => $lastActive ? Carbon::parse($lastActive)->format('M j, Y') : 'â€”',
                 'status'            => $t->status,
             ];
         });
@@ -164,9 +164,9 @@ class PrincipalReportController extends Controller
         ]);
     }
 
-    /* ═══════════════════════════════════════════════════════════════ *
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• *
      *  3. SUBJECT COVERAGE REPORT                                      *
-     * ═══════════════════════════════════════════════════════════════ */
+     * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     public function subjectCoverage(Request $request): JsonResponse
     {
         $from = $request->date('date_from');
@@ -178,7 +178,7 @@ class PrincipalReportController extends Controller
             ->get();
 
         $rows = $subjects->map(function (Subject $s) use ($from, $to) {
-            $teacherNames = $s->teachers->pluck('name')->implode(', ') ?: '— Unassigned —';
+            $teacherNames = $s->teachers->pluck('name')->implode(', ') ?: 'â€” Unassigned â€”';
 
             $studentsCount = DB::table('subject_student')
                 ->where('subject_id', $s->id)
@@ -232,9 +232,9 @@ class PrincipalReportController extends Controller
         ]);
     }
 
-    /* ═══════════════════════════════════════════════════════════════ *
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• *
      *  4. GRADE LEVEL DISTRIBUTION                                     *
-     * ═══════════════════════════════════════════════════════════════ */
+     * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     public function gradeDistribution(Request $request): JsonResponse
     {
         $grades = [
@@ -289,9 +289,9 @@ class PrincipalReportController extends Controller
         ]);
     }
 
-    /* ═══════════════════════════════════════════════════════════════ *
+    /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• *
      *  5. EXPORT (PDF or Word)                                         *
-     * ═══════════════════════════════════════════════════════════════ */
+     * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
     public function export(Request $request)
     {
         $reportType = $request->string('report_type')->toString();
@@ -328,7 +328,7 @@ class PrincipalReportController extends Controller
         $phpWord = new PhpWord();
         $section = $phpWord->addSection();
 
-        // ── Official school letterhead ──────────────────────────────
+        // â”€â”€ Official school letterhead â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         $churchLogoPath = public_path('images/panabo-sda-mega-church-logo.jpg');
         $schoolLogoPath = public_path('images/panabo-sda-logo.jpg');
 
@@ -346,7 +346,7 @@ class PrincipalReportController extends Controller
         $centerCell = $lhTable->addCell(7600, $textCellStyle);
         $centerCell->addText('PANABO SDA LEARNING CENTER, INC.', ['bold' => true, 'size' => 15, 'color' => '14532D'], ['alignment' => Jc::CENTER]);
         $centerCell->addText('"Developing Leaders Today That Will Walk Jesus into Eternity"', ['italic' => true, 'size' => 9], ['alignment' => Jc::CENTER]);
-        $centerCell->addText('Government Recognition No. 002 S. 2013  •  School ID No. 405590', ['size' => 7.5, 'color' => '6B7280'], ['alignment' => Jc::CENTER]);
+        $centerCell->addText('Government Recognition No. 002 S. 2013  â€¢  School ID No. 405590', ['size' => 7.5, 'color' => '6B7280'], ['alignment' => Jc::CENTER]);
         $centerCell->addText('Panabo City', ['size' => 7.5, 'color' => '6B7280'], ['alignment' => Jc::CENTER]);
 
         $rightCell = $lhTable->addCell(1200, $logoCellStyle);
@@ -360,14 +360,14 @@ class PrincipalReportController extends Controller
         ]);
         $section->addTextBreak(1);
 
-        // ── Report header ────────────────────────────────────────────
+        // â”€â”€ Report header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         $section->addText('GENERATED VIA STUDYNEST LEARNING MANAGEMENT SYSTEM', ['size' => 7, 'color' => '9CA3AF'], ['alignment' => Jc::CENTER, 'spaceAfter' => 40]);
         $section->addText($this->prettyTitle($reportType), ['bold' => true, 'size' => 14, 'color' => '6D28D9'], ['alignment' => Jc::CENTER]);
-        $section->addText('Official Document — Submitted to the School President', ['italic' => true, 'size' => 9, 'color' => '6B7280'], ['alignment' => Jc::CENTER]);
+        $section->addText('Official Document â€” Submitted to the School President', ['italic' => true, 'size' => 9, 'color' => '6B7280'], ['alignment' => Jc::CENTER]);
         $section->addText('Prepared by: ' . ($data['principal']['name'] ?? 'Principal'), ['italic' => true, 'size' => 10], ['alignment' => Jc::CENTER]);
         $section->addText('Generated: ' . ($data['generated_at'] ?? now()->format('M j, Y h:i A')), ['italic' => true, 'size' => 10], ['alignment' => Jc::CENTER]);
         if (!empty($data['date_from']) || !empty($data['date_to'])) {
-            $section->addText('Period: ' . ($data['date_from'] ?? '—') . ' to ' . ($data['date_to'] ?? '—'), ['italic' => true, 'size' => 10], ['alignment' => Jc::CENTER]);
+            $section->addText('Period: ' . ($data['date_from'] ?? 'â€”') . ' to ' . ($data['date_to'] ?? 'â€”'), ['italic' => true, 'size' => 10], ['alignment' => Jc::CENTER]);
         }
         $section->addTextBreak(1);
 
@@ -401,7 +401,7 @@ class PrincipalReportController extends Controller
         ]);
     }
 
-    /* ─── Helpers ─────────────────────────────────────────────────── */
+    /* â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
     protected function prettyTitle(string $type): string
     {

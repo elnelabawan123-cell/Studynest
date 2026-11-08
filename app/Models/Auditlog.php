@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Audit Log
  *
  * Records important system actions related to security, data integrity,
- * and accountability — especially changes that need a traceable paper trail.
+ * and accountability â€” especially changes that need a traceable paper trail.
  * Purpose : Track who changed what, when, and why.
  * Examples:
  *   - Admin changed a teacher's role
@@ -18,9 +18,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *   - Admin granted or revoked permissions
  *   - Settings were modified by an administrator
  *
- * @see Activitylog  for general user-behaviour monitoring
+ * @see ActivityLog  for general user-behaviour monitoring
  */
-class Auditlog extends Model
+class AuditLog extends Model
 {
     // Migration created the table as 'audit_logs'
     protected $table = 'audit_logs';
@@ -35,8 +35,8 @@ class Auditlog extends Model
         'new_value' => 'array',
     ];
 
-    // ── Common action constants ────────────────────────────────────────────────
-    // Use these when calling Auditlog::record() so action values stay consistent.
+    // â”€â”€ Common action constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Use these when calling AuditLog::record() so action values stay consistent.
 
     // Data changes
     const ACTION_CREATE          = 'CREATE';
@@ -57,13 +57,13 @@ class Auditlog extends Model
     const ACTION_MAINTENANCE_ON  = 'MAINTENANCE_ON';
     const ACTION_MAINTENANCE_OFF = 'MAINTENANCE_OFF';
 
-    // ── Relationship ───────────────────────────────────────────────────────────
+    // â”€â”€ Relationship â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class)->withDefault(['name' => 'System']);
     }
 
-    // ── Static recorder ───────────────────────────────────────────────────────
+    // â”€â”€ Static recorder â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     /**
      * Record an auditable system event.
      *

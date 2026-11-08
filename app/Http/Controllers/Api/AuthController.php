@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Models\Activitylog;
-use App\Models\Auditlog;
+use App\Models\ActivityLog;
+use App\Models\AuditLog;
 use App\Models\AdminSetting;
 use App\Models\Student;
 use App\Models\User;
@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthController extends BaseApiController
 {
-    // ── POST /api/login ───────────────────────────────────────────────────────
+    // â”€â”€ POST /api/login â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public function login(Request $request): JsonResponse
     {
         $request->validate([
@@ -91,8 +91,8 @@ class AuthController extends BaseApiController
                 : null;
         }
 
-        // ── Activity log ──────────────────────────────────────────────────────
-        Activitylog::record(
+        // â”€â”€ Activity log â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        ActivityLog::record(
             action:      'LOGIN',
             module:      'Auth',
             description: "{$user->name} logged in.",
@@ -104,13 +104,13 @@ class AuthController extends BaseApiController
         return $this->success(['user' => $userData, 'token' => $token], 'Login successful.');
     }
 
-    // ── POST /api/logout ──────────────────────────────────────────────────────
+    // â”€â”€ POST /api/logout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public function logout(Request $request): JsonResponse
     {
         $user = $request->user();
 
-        // ── Activity log ──────────────────────────────────────────────────────
-        Activitylog::record(
+        // â”€â”€ Activity log â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        ActivityLog::record(
             action:      'LOGOUT',
             module:      'Auth',
             description: "{$user->name} logged out.",
@@ -167,7 +167,7 @@ class AuthController extends BaseApiController
         ], 'Profile updated successfully.');
     }
 
-    // ── POST /api/change-password ─────────────────────────────────────────────
+    // â”€â”€ POST /api/change-password â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Call this from wherever you handle password changes.
     public function changePassword(Request $request): JsonResponse
     {
@@ -185,19 +185,19 @@ class AuthController extends BaseApiController
         $user->update([
             'password'       => Hash::make($request->new_password),
             'is_first_login' => false,
-            'temp_password'  => null,   // ← clear so account no longer appears in export
+            'temp_password'  => null,   // â† clear so account no longer appears in export
         ]);
 
-        // ── Activity log ──────────────────────────────────────────────────────
-        Activitylog::record(
+        // â”€â”€ Activity log â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        ActivityLog::record(
             action:      'CHANGE_PASSWORD',
             module:      'Auth',
             description: "{$user->name} changed their password.",
         );
 
-        // ── Audit log ─────────────────────────────────────────────────────────
-        Auditlog::record(
-            action:      Auditlog::ACTION_PASSWORD_CHANGE,
+        // â”€â”€ Audit log â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        AuditLog::record(
+            action:      AuditLog::ACTION_PASSWORD_CHANGE,
             tableName:   'users',
             recordId:    $user->id,
             oldValue:    ['password' => '(hidden)'],

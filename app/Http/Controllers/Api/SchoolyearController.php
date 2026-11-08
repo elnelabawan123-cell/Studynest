@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
-class SchoolyearController extends BaseApiController
+class SchoolYearController extends BaseApiController
 {
     const GRADE_MAP = [
         'Grade 1'  => 'Grade 2',
@@ -18,7 +18,7 @@ class SchoolyearController extends BaseApiController
         'Grade 3'  => 'Grade 4',
         'Grade 4'  => 'Grade 5',
         'Grade 5'  => 'Grade 6',
-        // Grade 6 → graduated (handled separately)
+        // Grade 6 â†’ graduated (handled separately)
     ];
 
     /**
@@ -105,7 +105,7 @@ class SchoolyearController extends BaseApiController
     }
 
     /**
-     * Core promotion logic — shared by controller and scheduler.
+     * Core promotion logic â€” shared by controller and scheduler.
      * Returns [$promoted, $graduated, $skipped, $nextSchoolYear].
      */
     public static function runPromotion(SchoolYear $sy): array
@@ -161,12 +161,12 @@ class SchoolyearController extends BaseApiController
             $sy->update([
                 'promoted'    => true,
                 'promoted_at' => $now,
-                'is_active'   => false,   // ← deactivate old SY
+                'is_active'   => false,   // â† deactivate old SY
             ]);
 
-            // ── Create next school year automatically ──────────────────
+            // â”€â”€ Create next school year automatically â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             // start_date = June 1 of the year after end_date
-            // e.g. SY 2026-2027 ends → next starts Jun 1, 2027 → SY. 2027-2028
+            // e.g. SY 2026-2027 ends â†’ next starts Jun 1, 2027 â†’ SY. 2027-2028
             $nextStartYear = $sy->end_date->year;   // the year the current SY ends (e.g. 2027)
             $nextStart     = Carbon::create($nextStartYear, 6, 1)->startOfDay();
             $nextEnd       = Carbon::create($nextStartYear + 1, 3, 31)->startOfDay(); // default end
@@ -210,7 +210,7 @@ class SchoolyearController extends BaseApiController
             ->get()
             ->map(fn ($h) => [
                 'id'          => $h->id,
-                'student'     => $h->student?->full_name ?? '—',
+                'student'     => $h->student?->full_name ?? 'â€”',
                 'from_grade'  => $h->from_grade,
                 'to_grade'    => $h->to_grade,
                 'result'      => $h->result,

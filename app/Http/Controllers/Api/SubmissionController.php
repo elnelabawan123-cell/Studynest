@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\GradeSubmissionRequest;
 use App\Http\Resources\SubmissionDetailResource;
 use App\Models\Activity;
-use App\Models\Activitylog;
-use App\Models\Auditlog;
+use App\Models\ActivityLog;
+use App\Models\AuditLog;
 use App\Models\Submission;
 use App\Models\SubmissionAnswer;
 use Illuminate\Http\JsonResponse;
@@ -19,9 +19,9 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SubmissionController extends Controller
 {
-    // ── GET /api/teacher/activities/{activity}/submissions ───────────────────
+    // â”€â”€ GET /api/teacher/activities/{activity}/submissions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Full roster: every enrolled student, each tagged with their real
-    // status — including "not_started" for students with no submission row
+    // status â€” including "not_started" for students with no submission row
     // at all (that status only exists here, never persisted in the DB).
     public function index(Request $request, Activity $activity): JsonResponse
     {
@@ -67,7 +67,7 @@ class SubmissionController extends Controller
         ]);
     }
 
-    // ── GET /api/teacher/submissions/{submission} ─────────────────────────────
+    // â”€â”€ GET /api/teacher/submissions/{submission} â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public function show(Request $request, Submission $submission): JsonResponse
     {
         $this->authorizeTeacher($request, $submission->activity);
@@ -89,8 +89,8 @@ class SubmissionController extends Controller
         return Storage::disk('public')->response($answer->photo_path);
     }
 
-    // ── POST /api/teacher/submissions/{submission}/grade ──────────────────────
-    // Body: { answers: [{ id, points_awarded, teacher_feedback? }] } — one
+    // â”€â”€ POST /api/teacher/submissions/{submission}/grade â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Body: { answers: [{ id, points_awarded, teacher_feedback? }] } â€” one
     // entry per Photo Upload answer being graded (partial grading is fine;
     // ungraded photo answers just keep the submission flagged for review).
     public function grade(GradeSubmissionRequest $request, Submission $submission): JsonResponse
@@ -113,14 +113,14 @@ class SubmissionController extends Controller
         $submission->refresh();
         $user = $request->user();
 
-        Activitylog::record(
+        ActivityLog::record(
             action:      'GRADE_SUBMISSION',
             module:      'Activities',
             description: "You graded {$submission->student->full_name}'s submission for \"{$submission->activity->title}\".",
         );
 
-        Auditlog::record(
-            action:      Auditlog::ACTION_UPDATE,
+        AuditLog::record(
+            action:      AuditLog::ACTION_UPDATE,
             tableName:   'submissions',
             recordId:    $submission->id,
             oldValue:    [],

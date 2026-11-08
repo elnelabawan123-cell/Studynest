@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
-use App\Models\Activitylog;
+use App\Models\ActivityLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ActivityLogController extends Controller
 {
-    // ── GET /api/admin/activity-logs ──────────────────────────────────────────
+    // â”€â”€ GET /api/admin/activity-logs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Query params: per_page, page, search, user_role, action, date_from, date_to
     public function index(Request $request): JsonResponse
     {
@@ -17,7 +17,7 @@ class ActivityLogController extends Controller
             'date_to' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
         ]);
 
-        $query = Activitylog::with('user:id,name')
+        $query = ActivityLog::with('user:id,name')
             ->orderByDesc('created_at');
 
         if ($search = $request->query('search')) {

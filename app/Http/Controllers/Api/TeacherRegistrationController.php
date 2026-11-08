@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Activitylog;
+use App\Models\ActivityLog;
 use App\Models\AdminSetting;
-use App\Models\Auditlog;
+use App\Models\AuditLog;
 use App\Models\Teacher;
 use App\Models\User;
 use App\Services\AdminAlertMailer;
@@ -78,7 +78,7 @@ class TeacherRegistrationController extends BaseApiController
             . 'Review the request in StudyNest Admin > Teachers > Registrations.'
         );
 
-        Activitylog::record('created', 'Teacher Registration', "Teacher {$name} submitted a registration request.");
+        ActivityLog::record('created', 'Teacher Registration', "Teacher {$name} submitted a registration request.");
 
         return $this->success([
             'request_id' => $registration,
@@ -154,8 +154,8 @@ class TeacherRegistrationController extends BaseApiController
             return ['user' => $user, 'name' => $name];
         });
 
-        Activitylog::record('approved', 'Teacher Registration', "Admin approved teacher registration for {$teacher['name']}.");
-        Auditlog::record(
+        ActivityLog::record('approved', 'Teacher Registration', "Admin approved teacher registration for {$teacher['name']}.");
+        AuditLog::record(
             'created',
             'users',
             $teacher['user']->id,
@@ -189,8 +189,8 @@ class TeacherRegistrationController extends BaseApiController
             return $this->error('Pending teacher registration not found.', 404);
         }
 
-        Activitylog::record('rejected', 'Teacher Registration', "Admin rejected teacher registration #{$id}.");
-        Auditlog::record(
+        ActivityLog::record('rejected', 'Teacher Registration', "Admin rejected teacher registration #{$id}.");
+        AuditLog::record(
             'updated',
             'teacher_registration_requests',
             $id,

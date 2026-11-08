@@ -6,8 +6,8 @@ use App\Models\Subject;
 use App\Models\Teacher;
 use App\Models\Student;
 use App\Models\Section;
-use App\Models\Activitylog;
-use App\Models\Auditlog;
+use App\Models\ActivityLog;
+use App\Models\AuditLog;
 use App\Models\AdminSetting;
 use App\Services\AdminAlertMailer;
 use Illuminate\Support\Facades\DB;
@@ -177,7 +177,7 @@ class SubjectController extends BaseApiController
     }
 
 
-    // ── Teacher assignment ─────────────────────────────────────
+    // â”€â”€ Teacher assignment â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public function assignTeacher(Request $request, int $id): JsonResponse
     {
@@ -211,7 +211,7 @@ class SubjectController extends BaseApiController
         return $this->success(null, "Teacher \"{$teacher->name}\" removed from \"{$subject->name}\".");
     }
 
-    // ── Teacher: own subjects ─────────────────────────────────
+    // â”€â”€ Teacher: own subjects â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public function mySubjects(Request $request): JsonResponse
     {
@@ -238,7 +238,7 @@ class SubjectController extends BaseApiController
         return $this->success($subjects);
     }
 
-    // ── Student: own enrolled subjects ───────────────────────
+    // â”€â”€ Student: own enrolled subjects â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public function studentSubjects(Request $request): JsonResponse
     {
@@ -325,15 +325,15 @@ class SubjectController extends BaseApiController
             "A student enrolled in a subject.\n\nStudent: {$name} ({$student->student_number})\n"
             . "Grade: {$student->grade}\nSubject: {$subject->name} ({$subject->code})"
         );
-        Activitylog::record(
-            Activitylog::ACTION_ENROLL_STUDENT,
+        ActivityLog::record(
+            ActivityLog::ACTION_ENROLL_STUDENT,
             'Subjects',
             "{$name} enrolled in {$subject->name}.",
             $request->user()->id,
             'student',
             $request->ip()
         );
-        Auditlog::record(
+        AuditLog::record(
             'created',
             'subject_student',
             $student->id,
@@ -353,7 +353,7 @@ class SubjectController extends BaseApiController
         ], 'Enrolled in subject successfully.');
     }
 
-    // ── Student enrollment ────────────────────────────────────
+    // â”€â”€ Student enrollment â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public function enrolledStudents(Request $request, int $id): JsonResponse
     {
@@ -369,7 +369,7 @@ class SubjectController extends BaseApiController
                 'last_name'    => $s->last_name,
                 'email'        => $s->email,
                 'grade'        => $s->grade,
-                'section_name' => $s->section?->name ?? '—',
+                'section_name' => $s->section?->name ?? 'â€”',
                 'gpa'          => $s->gpa,
                 'status'       => $s->status,
             ]);
@@ -387,7 +387,7 @@ class SubjectController extends BaseApiController
         $subject = Subject::findOrFail($id);
         $query   = Student::query()->with('section');
 
-        // ── ALWAYS filter by subject's grade level ─────────────
+        // â”€â”€ ALWAYS filter by subject's grade level â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         $query->where('grade', $subject->grade_level);
 
         // Additional optional filters
@@ -413,7 +413,7 @@ class SubjectController extends BaseApiController
             'email'        => $s->email,
             'grade'        => $s->grade,
             'section_id'   => $s->section_id,
-            'section_name' => $s->section?->name ?? '—',
+            'section_name' => $s->section?->name ?? 'â€”',
             'gpa'          => $s->gpa,
             'status'       => $s->status,
             'is_enrolled'  => in_array($s->id, $enrolled),
@@ -428,9 +428,9 @@ class SubjectController extends BaseApiController
     /**
      * POST /api/teacher/subjects/{id}/enroll-students
      *
-     * Writes Activitylog + Auditlog rows per newly-enrolled student.
-     *  - Activitylog uses a friendly "You enrolled X..." message → shown in teacher's bell.
-     *  - Auditlog uses a formal "Teacher X enrolled student Y (ID:...)..." message → for admin forensics.
+     * Writes ActivityLog + AuditLog rows per newly-enrolled student.
+     *  - ActivityLog uses a friendly "You enrolled X..." message â†’ shown in teacher's bell.
+     *  - AuditLog uses a formal "Teacher X enrolled student Y (ID:...)..." message â†’ for admin forensics.
      */
     public function enrollStudents(Request $request, int $id): JsonResponse
     {
@@ -452,7 +452,7 @@ class SubjectController extends BaseApiController
             );
         }
 
-        // Attach — capture which IDs were ACTUALLY newly attached
+        // Attach â€” capture which IDs were ACTUALLY newly attached
         // (skips students already enrolled, so we don't log no-ops)
         $result        = $subject->students()->syncWithoutDetaching($data['student_ids']);
         $newlyAttached = $result['attached'] ?? [];
@@ -468,8 +468,8 @@ class SubjectController extends BaseApiController
             // Formal text for the admin Audit Log (keeps IDs for forensics)
             $auditText = "Teacher \"{$user->name}\" enrolled student \"{$student->full_name}\" (ID: {$student->id}) into subject \"{$subject->name}\" ({$subject->grade_level}).";
 
-            // ── Activity Log ─ picked up by NotificationController → bell
-            Activitylog::create([
+            // â”€â”€ Activity Log â”€ picked up by NotificationController â†’ bell
+            ActivityLog::create([
                 'user_id'     => $user->id,
                 'user_role'   => 'teacher',
                 'action'      => 'enroll_student',
@@ -477,12 +477,12 @@ class SubjectController extends BaseApiController
                 'description' => $notifText,
             ]);
 
-            // ── Audit Log ─ accountability trail (admin-facing, formal)
-            Auditlog::create([
+            // â”€â”€ Audit Log â”€ accountability trail (admin-facing, formal)
+            AuditLog::create([
                 'user_id'     => $user->id,
                 'user_role'   => 'teacher',
                 'action'      => 'INSERT',
-                'table_name'  => 'student_subject', // Laravel default pivot — verify in Subject/Student model
+                'table_name'  => 'student_subject', // Laravel default pivot â€” verify in Subject/Student model
                 'description' => $auditText,
                 'old_values'  => null,
                 'new_values'  => json_encode([
@@ -507,8 +507,8 @@ class SubjectController extends BaseApiController
      * DELETE /api/teacher/subjects/{id}/unenroll-student/{studentId}
      *
      * Accepts optional remarks (reason) in the request body.
-     *  - Activitylog uses friendly "You removed X..." message → shown in teacher's bell.
-     *  - Auditlog uses formal "Teacher X removed student Y (ID:...)..." message → admin forensics.
+     *  - ActivityLog uses friendly "You removed X..." message â†’ shown in teacher's bell.
+     *  - AuditLog uses formal "Teacher X removed student Y (ID:...)..." message â†’ admin forensics.
      *  - Remarks appear in both messages, and are also stored as a structured field
      *    inside audit log's old_values for searchable accountability.
      */
@@ -524,14 +524,14 @@ class SubjectController extends BaseApiController
 
         // Friendly text for the teacher's bell + Activity Log
         $notifText = "You removed {$student->full_name} from {$subject->name}"
-            . ($remarks !== '' ? " — {$remarks}." : ".");
+            . ($remarks !== '' ? " â€” {$remarks}." : ".");
 
         // Formal text for the admin Audit Log
         $auditText = "Teacher \"{$user->name}\" removed student \"{$student->full_name}\" (ID: {$student->id}) from subject \"{$subject->name}\""
             . ($remarks !== '' ? ". Reason: {$remarks}" : ".");
 
-        // ── Activity Log ─ picked up by NotificationController → bell
-        Activitylog::create([
+        // â”€â”€ Activity Log â”€ picked up by NotificationController â†’ bell
+        ActivityLog::create([
             'user_id'     => $user->id,
             'user_role'   => 'teacher',
             'action'      => 'unenroll_student',
@@ -539,12 +539,12 @@ class SubjectController extends BaseApiController
             'description' => $notifText,
         ]);
 
-        // ── Audit Log ─ remarks preserved in old_values for accountability
-        Auditlog::create([
+        // â”€â”€ Audit Log â”€ remarks preserved in old_values for accountability
+        AuditLog::create([
             'user_id'     => $user->id,
             'user_role'   => 'teacher',
             'action'      => 'DELETE',
-            'table_name'  => 'student_subject', // Laravel default pivot — verify in Subject/Student model
+            'table_name'  => 'student_subject', // Laravel default pivot â€” verify in Subject/Student model
             'description' => $auditText,
             'old_values'  => json_encode([
                 'subject_id' => $subject->id,

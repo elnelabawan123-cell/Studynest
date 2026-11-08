@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Http\Controllers\Api\SchoolyearController;
+use App\Http\Controllers\Api\SchoolYearController;
 use App\Models\SchoolYear;
 use Illuminate\Console\Command;
 
@@ -31,14 +31,14 @@ class PromoteStudents extends Command
             return self::SUCCESS;
         }
 
-        $this->info("End date reached for {$sy->label}. Running promotion…");
+        $this->info("End date reached for {$sy->label}. Running promotionâ€¦");
 
-        [$promoted, $graduated, $skipped, $nextSy] = SchoolyearController::runPromotion($sy);
+        [$promoted, $graduated, $skipped, $nextSy] = SchoolYearController::runPromotion($sy);
 
-        $this->info("✅ Done — {$promoted} promoted, {$graduated} graduated, {$skipped} skipped.");
+        $this->info("âœ… Done â€” {$promoted} promoted, {$graduated} graduated, {$skipped} skipped.");
 
         if ($nextSy) {
-            $this->info("📅 New school year created: {$nextSy->label}");
+            $this->info("ðŸ“… New school year created: {$nextSy->label}");
             $this->info("   Start: {$nextSy->start_date->format('M d, Y')}");
             $this->info("   End:   {$nextSy->end_date->format('M d, Y')} (editable by admin)");
         }

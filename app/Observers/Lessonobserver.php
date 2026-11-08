@@ -11,10 +11,10 @@ use App\Models\TeacherActivityLog;
  *
  * - On create: logs 'lesson_scheduled' (or 'lesson_published' if created
  *   already published).
- * - On status flip to 'published' — whether triggered by a teacher action
- *   or by the PublishScheduledLessons scheduled command — logs 'lesson_published'.
+ * - On status flip to 'published' â€” whether triggered by a teacher action
+ *   or by the PublishScheduledLessons scheduled command â€” logs 'lesson_published'.
  */
-class LessonObserver
+class Lessonobserver
 {
     public function created(Lesson $lesson): void
     {
