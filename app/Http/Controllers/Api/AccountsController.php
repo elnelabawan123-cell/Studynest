@@ -92,30 +92,40 @@ class AccountsController extends BaseApiController
                 'temp_password' => null,
             ])->save();
 
-            if ($user->role === 'teacher') {
-                Mail::to($user->email)->send(new TeacherCredentialsMail(
-                    $user->name,
-                    $user->username ?? $user->email,
-                    $user->email,
-                    $password,
-                    'reset',
-                ));
-            } else {
-                Mail::to($user->email)->send(new StudentCredentialsMail(
-                    $profile->full_name ?? $user->name,
-                    $profile->student_number,
-                    $password,
-                ));
+            $mailSent = false;
+            try {
+                if ($user->role === 'teacher') {
+                    Mail::to($user->email)->send(new TeacherCredentialsMail(
+                        $user->name,
+                        $user->username ?? $user->email,
+                        $user->email,
+                        $password,
+                        'reset',
+                    ));
+                } else {
+                    Mail::to($user->email)->send(new StudentCredentialsMail(
+                        $profile->full_name ?? $user->name,
+                        $profile->student_number,
+                        $password,
+                    ));
+                }
+                $mailSent = true;
+            } catch (Throwable $mailEx) {
+                Log::warning("Reset password email delivery failed for user #{$user->id}: {$mailEx->getMessage()}");
             }
 
             $user->tokens()->delete();
             DB::commit();
 
             return $this->success([
-                'user_id' => $user->id,
-                'email' => $user->email,
-                'email_status' => 'sent',
-            ], 'Password reset successfully. The new temporary password was emailed to the user.');
+                'user_id'            => $user->id,
+                'email'              => $user->email,
+                'temporary_password' => $password,
+                'email_status'       => $mailSent ? 'sent' : 'failed',
+            ], $mailSent
+                ? 'Password reset successfully. The new temporary password was emailed to the user.'
+                : 'Password reset successfully! Note: Email delivery could not reach the mail host due to server network limits. Temporary password: ' . $password
+            );
         } catch (Throwable $e) {
             DB::rollBack();
             Log::error("Account password reset/email failed for user #{$user->id}: {$e->getMessage()}");

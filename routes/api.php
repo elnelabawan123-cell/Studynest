@@ -40,7 +40,7 @@ use App\Http\Controllers\Api\StudentInventoryController;
 
 
 // ── Public ───────────────────────────────────────────────────
-Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:6,1');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:6,1')->name('login');
 Route::post('/2fa/verify', [TwoFactorController::class, 'verify'])->middleware('throttle:6,1');
 Route::get('/settings/public', [TeacherRegistrationController::class, 'options']);
 Route::post('/teacher-registration-requests', [TeacherRegistrationController::class, 'register'])->middleware('throttle:5,1');

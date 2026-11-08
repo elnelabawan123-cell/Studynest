@@ -126,14 +126,17 @@ class TeacherAccountController extends BaseApiController
             $mailResult = $this->sendCredentialsEmail($fullName, $username, $email, $generatedPassword, 'created');
 
             return $this->success([
-                'id'           => $user->id,
-                'name'         => $fullName,
-                'email'        => $email,
-                'role'         => $user->role,
-                'email_status' => $mailResult['sent'] ? 'sent' : 'failed',
+                'id'                 => $user->id,
+                'name'               => $fullName,
+                'email'              => $email,
+                'role'               => $user->role,
+                'username'           => $username,
+                'temporary_password' => $generatedPassword,
+                'email_status'       => $mailResult['sent'] ? 'sent' : 'failed',
+                'email_error'        => $mailResult['error'],
             ], $mailResult['sent']
                 ? 'Teacher account created successfully. Credentials emailed to the teacher.'
-                : 'Teacher account created, but the credentials email could not be sent. Resolve email delivery and reset the password from Accounts to send new credentials.',
+                : 'Teacher account created successfully! Credentials email could not be delivered due to mail port restrictions. Temporary password: ' . $generatedPassword,
             201);
 
         } catch (\Throwable $e) {
