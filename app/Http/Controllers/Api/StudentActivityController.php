@@ -72,6 +72,18 @@ class StudentActivityController extends BaseApiController
         }));
     }
 
+    public function assignments(Request $request): JsonResponse
+    {
+        $request->merge(['type' => 'Assignment']);
+        return $this->index($request);
+    }
+
+    public function quizzes(Request $request): JsonResponse
+    {
+        $request->merge(['type' => 'Quiz']);
+        return $this->index($request);
+    }
+
     // GET /api/student/activities/{activity}
     public function show(Request $request, Activity $activity): JsonResponse
     {
