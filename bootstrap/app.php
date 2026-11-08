@@ -33,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
                     'status'  => false,
                     'message' => 'Validation failed.',
                     'data'    => $e->errors(),
+                    'errors'  => $e->errors(),
                 ], 422);
             }
         });
