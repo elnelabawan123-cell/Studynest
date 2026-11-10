@@ -16,10 +16,12 @@ class StudentGameReward extends Model
         'status',
         'completed_at',
         'attempts',
+        'progress_data',
     ];
 
     protected $casts = [
         'completed_at' => 'datetime',
+        'progress_data' => 'array',
     ];
 
     public function student()

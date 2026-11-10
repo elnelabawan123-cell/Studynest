@@ -67,6 +67,8 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::post('/student/subjects/{id}/enroll',   [SubjectController::class, 'enrollStudent']);
         Route::get('/student/game-rewards',            [StudentGameRewardController::class, 'index']);
         Route::post('/student/game-rewards',           [StudentGameRewardController::class, 'store']);
+        Route::get('/student/game-progress',           [StudentGameRewardController::class, 'progressIndex']);
+        Route::post('/student/game-progress',          [StudentGameRewardController::class, 'saveProgress']);
 
         // Star economy: wallet, shop, inventory
         Route::get('/student/wallet',                  [StudentWalletController::class, 'balance']);
