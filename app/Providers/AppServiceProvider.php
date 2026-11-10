@@ -2,14 +2,16 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
+use App\Mail\Transports\BrevoTransport;
+use App\Models\Activity;
+use App\Models\Lesson;
+use App\Observers\Activityobserver;
+use App\Observers\Lessonobserver;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
-use App\Models\Lesson;
-use App\Models\Activity;
-use App\Observers\Lessonobserver;
-use App\Observers\Activityobserver;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -26,6 +28,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Mail::extend('brevo', function (array $config = []): BrevoTransport {
+            return new BrevoTransport(
+                apiKey: (string) config('services.brevo.key', ''),
+                endpoint: (string) config('services.brevo.endpoint', 'https://api.brevo.com/v3/smtp/email'),
+                timeout: (int) ($config['timeout'] ?? 10),
+            );
+        });
+
         if (app()->environment('testing')) {
             return;
         }
