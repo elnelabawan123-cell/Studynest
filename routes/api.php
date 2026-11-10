@@ -34,6 +34,7 @@ use App\Http\Controllers\Api\StudentLessonController;
 use App\Http\Controllers\Api\AccountsController;
 use App\Http\Controllers\Api\TeacherLessonActivityController;
 use App\Http\Controllers\Api\StudentGameRewardController;
+use App\Http\Controllers\Api\GameContentController;
 use App\Http\Controllers\Api\StudentWalletController;
 use App\Http\Controllers\Api\StudentShopController;
 use App\Http\Controllers\Api\StudentInventoryController;
@@ -69,6 +70,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::post('/student/game-rewards',           [StudentGameRewardController::class, 'store']);
         Route::get('/student/game-progress',           [StudentGameRewardController::class, 'progressIndex']);
         Route::post('/student/game-progress',          [StudentGameRewardController::class, 'saveProgress']);
+        Route::get('/student/game-content/{gameKey}',  [GameContentController::class, 'showForStudent']);
 
         // Star economy: wallet, shop, inventory
         Route::get('/student/wallet',                  [StudentWalletController::class, 'balance']);
@@ -276,6 +278,10 @@ Route::post('student-accounts/bulk-upload/commit',  [StudentBulkController::clas
         Route::post('2fa/enable',        [TwoFactorController::class, 'enable']);
         Route::post('2fa/confirm-setup', [TwoFactorController::class, 'confirmSetup']);
         Route::post('2fa/disable',       [TwoFactorController::class, 'disable']);
+
+        // Configurable 3D mini-game question content (updateable without rebuilding APK)
+        Route::get ('game-content/{gameKey}', [GameContentController::class, 'show']);
+        Route::put ('game-content/{gameKey}', [GameContentController::class, 'update']);
     });
 
 });
