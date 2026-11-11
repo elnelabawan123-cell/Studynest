@@ -38,6 +38,7 @@ use App\Http\Controllers\Api\GameContentController;
 use App\Http\Controllers\Api\StudentWalletController;
 use App\Http\Controllers\Api\StudentShopController;
 use App\Http\Controllers\Api\StudentInventoryController;
+use App\Http\Controllers\Api\AiVoiceController;
 
 
 // ── Public ───────────────────────────────────────────────────
@@ -52,6 +53,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get ('/me',     [AuthController::class, 'me'])->middleware('maintenance');
     Route::put ('/me',     [AuthController::class, 'updateMe'])->middleware('maintenance');
+    Route::post('/ai-voice/synthesize', [AiVoiceController::class, 'synthesize'])->middleware('throttle:60,1');
 
     // ── Student (Flutter) ─────────────────────────────────────
     Route::middleware(['role:student', 'maintenance', 'throttle:student-api'])->group(function () {
