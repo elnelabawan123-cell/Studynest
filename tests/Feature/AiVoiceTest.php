@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Services\FilipinoNeuralTtsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as ClientRequest;
 use Illuminate\Routing\Middleware\ThrottleRequests;
@@ -85,7 +86,7 @@ class AiVoiceTest extends TestCase
         Http::assertSentCount(1);
     }
 
-    public function test_falls_back_cleanly_to_premade_voice_when_library_voice_requires_paid_plan(): void
+    public function test_uses_native_filipino_neural_voice_when_library_voice_requires_paid_plan(): void
     {
         $this->withoutMiddleware(ThrottleRequests::class);
 
@@ -97,6 +98,58 @@ class AiVoiceTest extends TestCase
             'role' => 'student',
             'is_active' => true,
         ]);
+
+        $nativeFilMp3 = str_repeat('FIL_NEURAL_MP3_', 20);
+        $this->mock(FilipinoNeuralTtsService::class, function ($mock) use ($nativeFilMp3) {
+            $mock->shouldReceive('normalizeFilipinoSpeechText')
+                ->andReturnUsing(fn (string $s) => trim(preg_replace('/\s+/', ' ', $s)));
+            $mock->shouldReceive('synthesize')
+                ->once()
+                ->with('Buuin ang salitang pamilya!', 'fil-PH-BlessicaNeural')
+                ->andReturn($nativeFilMp3);
+        });
+
+        Http::fake(function (ClientRequest $request) {
+            if (str_contains($request->url(), 'MIWz5nzn9F2CYPIedIPx')) {
+                return Http::response([
+                    'detail' => [
+                        'type' => 'payment_required',
+                        'code' => 'paid_plan_required',
+                        'message' => 'Free users cannot use library voices via the API.',
+                    ],
+                ], 402);
+            }
+            return Http::response(['detail' => 'Unexpected URL'], 500);
+        });
+
+        $res = $this->actingAs($user, 'sanctum')
+            ->postJson('/api/ai-voice/synthesize', ['text' => 'Buuin ang salitang pamilya!']);
+
+        $res->assertStatus(200)
+            ->assertHeader('Content-Type', 'audio/mpeg')
+            ->assertHeader('X-AI-Voice-Id', 'fil-PH-BlessicaNeural')
+            ->assertHeader('X-AI-Voice-Fallback', '1');
+        $this->assertSame($nativeFilMp3, $res->getContent());
+    }
+
+    public function test_falls_back_cleanly_to_premade_elevenlabs_when_native_filipino_unavailable(): void
+    {
+        $this->withoutMiddleware(ThrottleRequests::class);
+
+        $user = User::create([
+            'name' => 'Student Voice Three',
+            'username' => 'student_voice_3',
+            'email' => 'student.voice3@studynest.test',
+            'password' => bcrypt('password'),
+            'role' => 'student',
+            'is_active' => true,
+        ]);
+
+        $this->mock(FilipinoNeuralTtsService::class, function ($mock) {
+            $mock->shouldReceive('normalizeFilipinoSpeechText')
+                ->andReturnUsing(fn (string $s) => trim(preg_replace('/\s+/', ' ', $s)));
+            $mock->shouldReceive('synthesize')->once()->andReturn(null);
+        });
 
         $fallbackMp3 = str_repeat('FALLBACK_MP3_', 20);
         Http::fake(function (ClientRequest $request) use ($fallbackMp3) {
