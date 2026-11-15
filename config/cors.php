@@ -27,6 +27,8 @@ return [
     'allowed_origins' => array_values(array_unique(array_merge(
         $configuredOrigins,
         [
+            'https://studynest-ph.web.app',
+            'https://studynest-ph.firebaseapp.com',
             'https://web-admin-58800.web.app',
             'https://web-admin-58800.firebaseapp.com',
         ]

@@ -28,19 +28,24 @@ class StudentPasswordController extends BaseApiController
             return $this->error('Current password is incorrect.', 422);
         }
 
-        // Prevent reusing the default password
-        if ($request->password === 'sdapass123#') {
-            return $this->error('You cannot keep the default password. Please choose a new one.', 422);
+        // Prevent reusing the default password or current temporary password
+        if ($request->password === 'sdapass123#' || Hash::check($request->password, $user->password)) {
+            return $this->error('Please choose a new password different from your current password.', 422);
         }
 
-        $user->update([
+        $user->forceFill([
             'password'       => Hash::make($request->password),
+            'temp_password'  => null,
             'is_first_login' => false,
-        ]);
+        ])->save();
 
-        // Stay logged in on this device; revoke others
-        $currentId = $request->user()->currentAccessToken()->id;
-        $user->tokens()->where('id', '!=', $currentId)->delete();
+        // Stay logged in on this device; revoke other Bearer tokens safely
+        $currentId = $request->user()->currentAccessToken()?->id;
+        if ($currentId) {
+            $user->tokens()->where('id', '!=', $currentId)->delete();
+        } else {
+            $user->tokens()->delete();
+        }
 
         return $this->success(
             ['is_first_login' => false],

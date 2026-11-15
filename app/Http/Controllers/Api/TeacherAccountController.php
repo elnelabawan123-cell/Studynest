@@ -104,10 +104,10 @@ class TeacherAccountController extends BaseApiController
                 'email'          => $email,
                 'username'       => $username,
                 'password'       => Hash::make($generatedPassword),
-                'temp_password'  => $generatedPassword,
                 'role'           => 'teacher',
                 'is_first_login' => true,
             ]);
+            $user->forceFill(['temp_password' => $generatedPassword])->save();
 
             Teacher::create([
                 'name'          => $fullName,
@@ -269,19 +269,6 @@ class TeacherAccountController extends BaseApiController
 
     private function generateRandomPassword(int $length = 10): string
     {
-        $upper  = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-        $lower  = 'abcdefghjkmnpqrstuvwxyz';
-        $digits = '23456789';
-        $all    = $upper . $lower . $digits;
-        $chars  = [
-            $upper[random_int(0, strlen($upper) - 1)],
-            $lower[random_int(0, strlen($lower) - 1)],
-            $digits[random_int(0, strlen($digits) - 1)],
-        ];
-        for ($i = count($chars); $i < $length; $i++) {
-            $chars[] = $all[random_int(0, strlen($all) - 1)];
-        }
-        shuffle($chars);
-        return implode('', $chars);
+        return User::generateTemporaryPassword($length);
     }
 }

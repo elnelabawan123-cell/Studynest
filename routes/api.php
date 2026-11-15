@@ -298,4 +298,6 @@ Route::middleware('signed:relative')->group(function () {
         ->name('lessons.signed-preview');
     Route::get('/lessons/{lesson}/signed-download', [StudentLessonController::class, 'signedDownload'])
         ->name('lessons.signed-download');
+    Route::get('/student/submissions/{submission}/answers/{answer}/photo', [StudentSubmissionController::class, 'signedPhoto'])
+        ->name('student.submissions.signed-photo');
 });

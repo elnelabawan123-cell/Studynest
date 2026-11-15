@@ -192,7 +192,7 @@ class StudentAccountController extends BaseApiController
             ])));
             $username        = $this->generateUsername($data['last_name']);
             $email           = strtolower(trim($data['email']));
-            $defaultPassword = 'sdapass123#';
+            $defaultPassword = User::generateTemporaryPassword();
 
             $user = User::create([
                 'name'           => $fullName,
@@ -202,6 +202,7 @@ class StudentAccountController extends BaseApiController
                 'role'           => 'student',
                 'is_first_login' => true,
             ]);
+            $user->forceFill(['temp_password' => $defaultPassword])->save();
 
             $student = Student::create([
                 'user_id'        => $user->id,
@@ -337,11 +338,12 @@ class StudentAccountController extends BaseApiController
             return $this->error('Student profile not found.', 404);
         }
 
-        $defaultPassword = 'sdapass123#';
-        $user->update([
+        $defaultPassword = User::generateTemporaryPassword();
+        $user->forceFill([
             'password'       => Hash::make($defaultPassword),
+            'temp_password'  => $defaultPassword,
             'is_first_login' => true,
-        ]);
+        ])->save();
         $user->tokens()->delete();
 
         // Notify the student, same as the teacher reset flow. Never blocks

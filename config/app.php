@@ -54,7 +54,7 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
-    'frontend_url' => env('FRONTEND_URL', 'https://web-admin-58800.web.app'),
+    'frontend_url' => env('FRONTEND_URL', 'https://studynest-ph.web.app'),
 
     /*
     |--------------------------------------------------------------------------

@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\SafeAttachmentPath;
+use App\Support\TeacherSubjectScope;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateActivityRequest extends FormRequest
@@ -9,7 +11,15 @@ class UpdateActivityRequest extends FormRequest
     public function authorize(): bool
     {
         $activity = $this->route('activity');
-        return $activity && $this->user() && $activity->teacher_id === $this->user()->id;
+        if (! $activity || ! $this->user() || $activity->teacher_id !== $this->user()->id) {
+            return false;
+        }
+
+        if ($this->filled('subject_id')) {
+            return TeacherSubjectScope::findAssignedTeacher($this->user(), $this->input('subject_id')) !== null;
+        }
+
+        return true;
     }
 
     public function rules(): array
@@ -32,7 +42,7 @@ class UpdateActivityRequest extends FormRequest
 
             'allow_photo_answer' => ['boolean'],
             'allow_text_answer'  => ['boolean'],
-            'attachment_path'    => ['nullable', 'string'],
+            'attachment_path'    => ['nullable', 'string', new SafeAttachmentPath()],
             'attachment_type'    => ['nullable', 'in:image,pdf,video,presentation'],
 
             'time_limit'         => ['nullable', 'integer', 'min:1', 'max:600'],
@@ -45,7 +55,7 @@ class UpdateActivityRequest extends FormRequest
             'quiz_questions.*.choices.*'         => ['nullable', 'string', 'max:500'],
             'quiz_questions.*.correct_answer'    => ['nullable', 'string', 'max:500'],
             'quiz_questions.*.points'            => ['required_with:quiz_questions', 'integer', 'min:1', 'max:1000'],
-            'quiz_questions.*.attachment_path'   => ['nullable', 'string'],
+            'quiz_questions.*.attachment_path'   => ['nullable', 'string', new SafeAttachmentPath()],
             'quiz_questions.*.attachment_type'   => ['nullable', 'in:image,pdf,video,presentation'],
         ];
     }

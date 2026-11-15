@@ -85,9 +85,6 @@ class Student extends Model
 
     public function hasAccount(): bool { return ! is_null($this->user_id); }
 
-    // Fixed default password (no longer derived from student number)
-    public function defaultPassword(): string { return 'sdapass123#'; }
-
     // ── Relationships ─────────────────────────────────────────
     public function user()    { return $this->belongsTo(User::class); }
     public function section() { return $this->belongsTo(Section::class); }

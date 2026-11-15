@@ -2,15 +2,14 @@
 
 namespace App\Http\Requests;
 
+use App\Support\TeacherSubjectScope;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreLessonRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        // Any authenticated teacher can create a lesson.
-        // Refine with a Gate/Policy if you have non-teacher roles.
-        return $this->user() !== null;
+        return TeacherSubjectScope::findAssignedTeacher($this->user(), $this->input('subject_id')) !== null;
     }
 
     public function rules(): array

@@ -60,17 +60,28 @@ class PendingCredentialsController extends BaseApiController
             ->with(['studentProfile.section', 'studentProfile.schoolYear'])
             ->orderBy('name')
             ->get()
-            ->map(fn ($u) => [
-                'id'             => $u->id,
-                'name'           => $u->studentProfile?->full_name ?? $u->name,
-                'username'       => $u->username,
-                'temp_password'  => 'sdapass123#',
-                'student_number' => $u->studentProfile?->student_number ?? '—',
-                'grade'          => $u->studentProfile?->grade          ?? '—',
-                'section'        => $u->studentProfile?->section?->name ?? '—',
-                'school_year'    => $u->studentProfile?->schoolYear?->label ?? '—',
-                'created_at'     => $u->created_at?->format('M d, Y'),
-            ]);
+            ->map(function ($u) {
+                if (! $u->temp_password) {
+                    $plain = User::generateTemporaryPassword();
+                    $u->forceFill([
+                        'temp_password' => $plain,
+                        'password'      => Hash::make($plain),
+                    ])->save();
+                    $u->temp_password = $plain;
+                }
+
+                return [
+                    'id'             => $u->id,
+                    'name'           => $u->studentProfile?->full_name ?? $u->name,
+                    'username'       => $u->username,
+                    'temp_password'  => $u->temp_password,
+                    'student_number' => $u->studentProfile?->student_number ?? '—',
+                    'grade'          => $u->studentProfile?->grade          ?? '—',
+                    'section'        => $u->studentProfile?->section?->name ?? '—',
+                    'school_year'    => $u->studentProfile?->schoolYear?->label ?? '—',
+                    'created_at'     => $u->created_at?->format('M d, Y'),
+                ];
+            });
 
         return $this->success([
             'teachers'      => $teachers,

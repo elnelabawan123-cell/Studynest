@@ -36,11 +36,11 @@ class AppServiceProvider extends ServiceProvider
             );
         });
 
+        $this->configureRateLimiting();
+
         if (app()->environment('testing')) {
             return;
         }
-
-        $this->configureRateLimiting();
 
         Lesson::observe(Lessonobserver::class);
         Activity::observe(Activityobserver::class);

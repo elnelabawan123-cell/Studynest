@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 /**
  * Consumed by the Flutter student app.
@@ -24,12 +25,18 @@ class SubmitActivityRequest extends FormRequest
 
     public function rules(): array
     {
+        $activity = $this->route('activity');
+        $questionRule = Rule::exists('quiz_questions', 'id');
+        if ($activity) {
+            $questionRule = $questionRule->where('activity_id', is_object($activity) ? $activity->id : $activity);
+        }
+
         return [
             'answers'                         => ['required', 'array', 'min:1'],
-            'answers.*.quiz_question_id'      => ['required', 'integer', 'exists:quiz_questions,id'],
+            'answers.*.quiz_question_id'      => ['required', 'integer', $questionRule],
             'answers.*.selected_choice'       => ['nullable', 'string', 'max:500'],
             'answers.*.text_answer'           => ['nullable', 'string', 'max:2000'],
-            'answers.*.photo'                 => ['nullable', 'file', 'image', 'max:10240'], // 10 MB
+            'answers.*.photo'                 => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:10240'], // 10 MB
         ];
     }
 }

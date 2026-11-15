@@ -10,6 +10,7 @@ use App\Models\ActivityLog;
 use App\Models\AuditLog;
 use App\Models\AdminSetting;
 use App\Services\AdminAlertMailer;
+use App\Support\TeacherSubjectScope;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -358,6 +359,7 @@ class SubjectController extends BaseApiController
     public function enrolledStudents(Request $request, int $id): JsonResponse
     {
         $subject  = Subject::findOrFail($id);
+        $this->authorizeAssignedTeacher($request, $subject);
         $students = $subject->students()
             ->with('section')
             ->orderBy('last_name')
@@ -385,6 +387,7 @@ class SubjectController extends BaseApiController
     public function availableStudents(Request $request, int $id): JsonResponse
     {
         $subject = Subject::findOrFail($id);
+        $this->authorizeAssignedTeacher($request, $subject);
         $query   = Student::query()->with('section');
 
         // â”€â”€ ALWAYS filter by subject's grade level â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -435,6 +438,7 @@ class SubjectController extends BaseApiController
     public function enrollStudents(Request $request, int $id): JsonResponse
     {
         $subject = Subject::findOrFail($id);
+        $this->authorizeAssignedTeacher($request, $subject);
         $data    = $request->validate([
             'student_ids'   => 'required|array|min:1',
             'student_ids.*' => 'exists:students,id',
@@ -515,6 +519,7 @@ class SubjectController extends BaseApiController
     public function unenrollStudent(Request $request, int $id, int $studentId): JsonResponse
     {
         $subject = Subject::findOrFail($id);
+        $this->authorizeAssignedTeacher($request, $subject);
         $student = Student::findOrFail($studentId);
         $remarks = trim($request->input('remarks', ''));
 
@@ -578,5 +583,13 @@ class SubjectController extends BaseApiController
             'available_grades' => $available,
             'all_assigned'     => empty($available),
         ]);
+    }
+
+    private function authorizeAssignedTeacher(Request $request, Subject $subject): Teacher
+    {
+        $teacher = TeacherSubjectScope::findAssignedTeacher($request->user(), $subject->id);
+        abort_unless($teacher, 403, 'You are not assigned to this subject.');
+
+        return $teacher;
     }
 }

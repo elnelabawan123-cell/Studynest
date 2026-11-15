@@ -65,12 +65,7 @@ class StudentLessonController extends BaseApiController
      */
     public function stream(Request $request, Lesson $lesson): Response
     {
-        $studentProfile = $request->user()->studentProfile;
-        abort_unless($studentProfile, 403, 'No student profile found for this account.');
-
-        $enrolled = $lesson->subject->students()->where('students.id', $studentProfile->id)->exists();
-        abort_unless($enrolled, 403, 'This lesson is not assigned to your class.');
-        abort_unless($lesson->status === 'published', 403, 'This lesson is not published yet.');
+        $this->authorizeStudentLesson($request, $lesson);
         abort_if(!$lesson->file_path, 404, 'No file attached to this lesson.');
 
         $disk = Storage::disk('public');
@@ -81,7 +76,7 @@ class StudentLessonController extends BaseApiController
         return response($content, 200, [
             'Content-Type' => $lesson->mime_type ?? 'application/pdf',
             'Content-Length' => (string) strlen($content),
-            'Content-Disposition' => 'inline; filename="' . ($lesson->file_name ?? 'lesson') . '"',
+            'Content-Disposition' => 'inline; filename="' . $this->safeDispositionFilename($lesson->file_name) . '"',
             'Access-Control-Allow-Origin' => '*',
         ]);
     }
@@ -100,11 +95,7 @@ class StudentLessonController extends BaseApiController
      */
     public function previewLink(Request $request, Lesson $lesson): JsonResponse
     {
-        $studentProfile = $request->user()->studentProfile;
-        abort_unless($studentProfile, 403, 'No student profile found for this account.');
-
-        $enrolled = $lesson->subject->students()->where('students.id', $studentProfile->id)->exists();
-        abort_unless($enrolled, 403, 'This lesson is not assigned to your class.');
+        $this->authorizeStudentLesson($request, $lesson);
 
         $relativeUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
             'lessons.signed-preview',
@@ -135,7 +126,7 @@ class StudentLessonController extends BaseApiController
         return response($content, 200, [
             'Content-Type' => $lesson->mime_type ?? 'application/pdf',
             'Content-Length' => (string) strlen($content), // FIXED: was missing — Syncfusion needs this to render
-            'Content-Disposition' => 'inline; filename="' . ($lesson->file_name ?? 'lesson') . '"',
+            'Content-Disposition' => 'inline; filename="' . $this->safeDispositionFilename($lesson->file_name) . '"',
             'Access-Control-Allow-Origin' => '*',
             // Removed 'Accept-Ranges: bytes' — we don't actually implement
             // 206 partial-content responses, so claiming range support
@@ -154,11 +145,7 @@ class StudentLessonController extends BaseApiController
      */
     public function downloadLink(Request $request, Lesson $lesson): JsonResponse
     {
-        $studentProfile = $request->user()->studentProfile;
-        abort_unless($studentProfile, 403, 'No student profile found for this account.');
-
-        $enrolled = $lesson->subject->students()->where('students.id', $studentProfile->id)->exists();
-        abort_unless($enrolled, 403, 'This lesson is not assigned to your class.');
+        $this->authorizeStudentLesson($request, $lesson);
 
         $relativeUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
             'lessons.signed-download',
@@ -191,7 +178,7 @@ class StudentLessonController extends BaseApiController
         return response($content, 200, [
             'Content-Type' => $lesson->mime_type ?? 'application/octet-stream',
             'Content-Length' => (string) strlen($content),
-            'Content-Disposition' => 'attachment; filename="' . ($lesson->file_name ?? 'lesson') . '"',
+            'Content-Disposition' => 'attachment; filename="' . $this->safeDispositionFilename($lesson->file_name) . '"',
         ]);
     }
 
@@ -217,11 +204,7 @@ class StudentLessonController extends BaseApiController
 
     private function trackActivity(Request $request, Lesson $lesson, string $type): JsonResponse
     {
-        $studentProfile = $request->user()->studentProfile;
-        abort_unless($studentProfile, 403, 'No student profile found for this account.');
-
-        $enrolled = $lesson->subject->students()->where('students.id', $studentProfile->id)->exists();
-        abort_unless($enrolled, 403, 'This lesson is not assigned to your class.');
+        $studentProfile = $this->authorizeStudentLesson($request, $lesson);
 
         $wasNew = !LessonActivityLog::where([
             'lesson_id' => $lesson->id,
@@ -242,5 +225,26 @@ class StudentLessonController extends BaseApiController
         }
 
         return $this->success(null, ucfirst($type) . ' recorded.');
+    }
+
+    private function authorizeStudentLesson(Request $request, Lesson $lesson)
+    {
+        $studentProfile = $request->user()->studentProfile;
+        abort_unless($studentProfile, 403, 'No student profile found for this account.');
+
+        $enrolled = $lesson->subject->students()->where('students.id', $studentProfile->id)->exists();
+        abort_unless($enrolled, 403, 'This lesson is not assigned to your class.');
+        abort_unless($lesson->status === 'published', 403, 'This lesson is not published yet.');
+
+        return $studentProfile;
+    }
+
+    private function safeDispositionFilename(?string $filename): string
+    {
+        $base = basename((string) $filename);
+        $clean = preg_replace('/[^A-Za-z0-9._ -]/', '_', $base);
+        $clean = trim((string) $clean, ". \t\n\r\0\x0B");
+
+        return $clean !== '' ? $clean : 'lesson';
     }
 }

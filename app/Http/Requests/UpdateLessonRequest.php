@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\TeacherSubjectScope;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateLessonRequest extends FormRequest
@@ -9,7 +10,15 @@ class UpdateLessonRequest extends FormRequest
     public function authorize(): bool
     {
         $lesson = $this->route('lesson');
-        return $lesson && $this->user() && $lesson->teacher_id === $this->user()->id;
+        if (! $lesson || ! $this->user() || $lesson->teacher_id !== $this->user()->id) {
+            return false;
+        }
+
+        if ($this->filled('subject_id')) {
+            return TeacherSubjectScope::findAssignedTeacher($this->user(), $this->input('subject_id')) !== null;
+        }
+
+        return true;
     }
 
     public function rules(): array

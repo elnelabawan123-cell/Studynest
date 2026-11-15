@@ -10,6 +10,10 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * due_date affects lateness only, never availability. The only thing
@@ -23,6 +27,9 @@ class StudentSubmissionController extends BaseApiController
     // GET /api/student/activities/{activity}/submission
     public function show(Request $request, Activity $activity): JsonResponse
     {
+        $this->assertStudentAccess($request, $activity);
+        abort_if($activity->resolveStatus() === 'Draft', 403, 'This is not published yet.');
+
         $submission = $this->existingSubmission($request, $activity);
         abort_if(!$submission, 404, 'Not started yet.');
 
@@ -32,7 +39,7 @@ class StudentSubmissionController extends BaseApiController
     // POST /api/student/activities/{activity}/start
     public function start(Request $request, Activity $activity): JsonResponse
     {
-        $this->studentProfile($request);
+        $this->assertStudentAccess($request, $activity);
         $this->assertOpen($activity);
 
         $submission = Submission::firstOrCreate(
@@ -60,7 +67,7 @@ class StudentSubmissionController extends BaseApiController
     // never creates a duplicate.
     public function saveAnswer(Request $request, Activity $activity): JsonResponse
     {
-        $this->studentProfile($request);
+        $this->assertStudentAccess($request, $activity);
         $submission = Submission::where('activity_id', $activity->id)
             ->where('student_id', $request->user()->id)
             ->first();
@@ -70,11 +77,15 @@ class StudentSubmissionController extends BaseApiController
         $this->assertOpen($activity);
 
         $data = $request->validate([
-            'quiz_question_id' => 'required|integer|exists:quiz_questions,id',
+            'quiz_question_id' => [
+                'required',
+                'integer',
+                Rule::exists('quiz_questions', 'id')->where('activity_id', $activity->id),
+            ],
             'question_index' => 'required|integer|min:0',
             'selected_choice' => 'nullable|string',
             'text_answer' => 'nullable|string',
-            'photo' => 'nullable|file|image|max:8192',
+            'photo' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:8192',
         ]);
 
         $existing = SubmissionAnswer::where('submission_id', $submission->id)
@@ -111,7 +122,7 @@ class StudentSubmissionController extends BaseApiController
     // POST /api/student/activities/{activity}/submit
     public function submit(Request $request, Activity $activity): JsonResponse
     {
-        $this->studentProfile($request);
+        $this->assertStudentAccess($request, $activity);
         $submission = Submission::where('activity_id', $activity->id)
             ->where('student_id', $request->user()->id)
             ->first();
@@ -129,10 +140,14 @@ class StudentSubmissionController extends BaseApiController
 
         $data = $request->validate([
             'answers' => 'required|array|min:1',
-            'answers.*.quiz_question_id' => 'required|integer|exists:quiz_questions,id',
+            'answers.*.quiz_question_id' => [
+                'required',
+                'integer',
+                Rule::exists('quiz_questions', 'id')->where('activity_id', $activity->id),
+            ],
             'answers.*.selected_choice' => 'nullable|string',
             'answers.*.text_answer' => 'nullable|string',
-            'answers.*.photo' => 'nullable|file|image|max:8192',
+            'answers.*.photo' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:8192',
         ]);
 
         foreach ($data['answers'] as $i => $a) {
@@ -211,6 +226,33 @@ class StudentSubmissionController extends BaseApiController
             . $activity->open_date->format('M d, Y') . ' at ' . $activity->open_time . '.');
     }
 
+    /**
+     * GET /api/student/submissions/{submission}/answers/{answer}/photo
+     * Protected by `signed:relative` middleware so private submission photos
+     * cannot be enumerated via public storage paths.
+     */
+    public function signedPhoto(Submission $submission, SubmissionAnswer $answer): StreamedResponse
+    {
+        abort_unless(
+            (int) $answer->submission_id === (int) $submission->id && $answer->photo_path,
+            Response::HTTP_NOT_FOUND
+        );
+        abort_unless(Storage::disk('public')->exists($answer->photo_path), Response::HTTP_NOT_FOUND);
+
+        return Storage::disk('public')->response($answer->photo_path);
+    }
+
+    private function assertStudentAccess(Request $request, Activity $activity)
+    {
+        $profile = $this->studentProfile($request);
+        $enrolled = $activity->subject()
+            ->whereHas('students', fn ($q) => $q->where('students.id', $profile->id))
+            ->exists();
+        abort_unless($enrolled, 403, 'You are not enrolled in this subject.');
+
+        return $profile;
+    }
+
     private function studentProfile(Request $request)
     {
         $profile = $request->user()->studentProfile;
@@ -261,7 +303,12 @@ class StudentSubmissionController extends BaseApiController
                 'selectedChoice' => $a->selected_choice,
                 'textAnswer' => $a->text_answer,
                 'photoUrl' => $a->photo_path
-                    ? rtrim($request->getSchemeAndHttpHost(), '/') . '/storage/' . ltrim($a->photo_path, '/')
+                    ? rtrim($request->getSchemeAndHttpHost(), '/') . URL::temporarySignedRoute(
+                        'student.submissions.signed-photo',
+                        now()->addHours(2),
+                        ['submission' => $submission->id, 'answer' => $a->id],
+                        false,
+                    )
                     : null,
                 'isCorrect' => $a->is_correct,
                 'pointsAwarded' => $a->points_awarded,

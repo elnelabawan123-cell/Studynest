@@ -33,8 +33,6 @@ class StudentBulkController extends BaseApiController
 {
     use GeneratesStudentUsername;
 
-    private const DEFAULT_PASSWORD = 'sdapass123#';
-
     /** GET /api/student-accounts/bulk-upload/template */
     public function template(): BinaryFileResponse
     {
@@ -187,16 +185,18 @@ class StudentBulkController extends BaseApiController
                     $record['first_name'], $record['middle_name'] ?: null,
                     $record['last_name'],  $record['suffix']      ?: null,
                 ])));
-                $username = $this->generateStudentUsername($record['last_name']);
+                $username     = $this->generateStudentUsername($record['last_name']);
+                $tempPassword = User::generateTemporaryPassword();
 
                 $user = User::create([
                     'name'           => $fullName,
                     'email'          => $record['email'],
                     'username'       => $username,
-                    'password'       => Hash::make(self::DEFAULT_PASSWORD),
+                    'password'       => Hash::make($tempPassword),
                     'role'           => 'student',
                     'is_first_login' => true,
                 ]);
+                $user->forceFill(['temp_password' => $tempPassword])->save();
 
                 $student = Student::create([
                     'user_id'        => $user->id,
@@ -218,7 +218,7 @@ class StudentBulkController extends BaseApiController
                 $emailStatus = 'sent';
                 $emailError  = null;
                 try {
-                    Mail::to($record['email'])->send(new StudentCredentialsMail($fullName, $student->student_number, self::DEFAULT_PASSWORD));
+                    Mail::to($record['email'])->send(new StudentCredentialsMail($fullName, $student->student_number, $tempPassword));
                 } catch (\Throwable $mailEx) {
                     $emailStatus = 'failed';
                     $emailError  = $mailEx->getMessage();
@@ -264,7 +264,6 @@ class StudentBulkController extends BaseApiController
             'email_failed_count'  => $emailFailures,
             'created'             => $created,
             'failed'              => $failed,
-            'default_password'    => self::DEFAULT_PASSWORD,
         ], sprintf(
             '%d student account(s) created, %d failed.%s',
             count($created),
