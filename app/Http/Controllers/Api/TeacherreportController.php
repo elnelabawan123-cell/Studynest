@@ -524,6 +524,11 @@ class TeacherreportController extends Controller
 
     protected function exportWord(string $reportType, array $data, string $filename)
     {
+        \PhpOffice\PhpWord\Settings::setOutputEscapingEnabled(true);
+        if (! class_exists(\ZipArchive::class)) {
+            \PhpOffice\PhpWord\Settings::setZipClass(\PhpOffice\PhpWord\Settings::PCLZIP);
+        }
+
         $phpWord = new PhpWord();
         $section = $phpWord->addSection();
 
@@ -570,13 +575,16 @@ class TeacherreportController extends Controller
             }
         }
 
+        if (! is_dir(storage_path('app'))) {
+            @mkdir(storage_path('app'), 0775, true);
+        }
         $tempPath = storage_path('app/' . $filename . '.docx');
         IOFactory::createWriter($phpWord, 'Word2007')->save($tempPath);
 
         // Clear any accidental output (PHP warnings, stray whitespace) that
         // would prepend to the binary and corrupt the .docx file.
-        if (ob_get_level()) {
-            ob_end_clean();
+        if (ob_get_length()) {
+            ob_clean();
         }
 
         return response()->download($tempPath, "{$filename}.docx", [

@@ -34,50 +34,30 @@ class MediaController extends Controller
             'file' => [
                 'required',
                 'file',
-                'mimes:' . implode(',', [...self::IMAGE_EXTS, 'pdf', ...self::PRESENTATION_EXTS, ...self::VIDEO_EXTS]),
+                'mimes:' . implode(',', [...MediaUploadLimits::IMAGE_EXTS, 'pdf', ...self::PRESENTATION_EXTS, ...MediaUploadLimits::VIDEO_EXTS]),
                 'max:102400',
             ],
+        ], [
+            'file.max'   => 'The uploaded file exceeds the 100 MB limit (photos: 5 MB, videos: 50 MB / 5 minutes, PDF & PowerPoint: 100 MB).',
+            'file.mimes' => 'Allowed formats: JPG, PNG, WEBP, PDF, PPT, PPTX, MP4, MOV, WEBM, M4V.',
         ]);
 
         $file = $request->file('file');
         $ext  = strtolower($file->getClientOriginalExtension());
         $type = match (true) {
-            $ext === 'pdf'                          => 'pdf',
-            in_array($ext, self::VIDEO_EXTS, true)  => 'video',
-            in_array($ext, self::PRESENTATION_EXTS, true) => 'presentation',
-            default                                  => 'image',
+            $ext === 'pdf'                                            => 'pdf',
+            in_array($ext, MediaUploadLimits::VIDEO_EXTS, true)       => 'video',
+            in_array($ext, self::PRESENTATION_EXTS, true)             => 'presentation',
+            default                                                   => 'image',
         };
 
-        if ($type === 'image' && $file->getSize() > MediaUploadLimits::MAX_IMAGE_BYTES) {
-            return response()->json([
-                'message' => 'Photos must be 5MB or smaller.',
-            ], 422);
+        if ($error = MediaUploadLimits::validateUploadedFile($file)) {
+            return response()->json(['message' => $error], 422);
         }
 
-        $duration = null;
-
-        if ($type === 'video') {
-            if ($file->getSize() > MediaUploadLimits::MAX_VIDEO_BYTES) {
-                return response()->json([
-                    'message' => 'Videos must be 50MB or smaller.',
-                ], 422);
-            }
-
-            $duration = MediaUploadLimits::videoDurationSeconds($file->getRealPath());
-
-            if ($duration === null) {
-                return response()->json([
-                    'message' => 'Could not read that video\'s length — please try a different file.',
-                ], 422);
-            }
-
-            if ($duration > MediaUploadLimits::MAX_VIDEO_SECONDS) {
-                return response()->json([
-                    'message' => 'Videos must be 5 minutes or shorter. This one is ' .
-                        gmdate('i:s', (int) round($duration)) . ' long.',
-                ], 422);
-            }
-        }
+        $duration = $type === 'video'
+            ? MediaUploadLimits::videoDurationSeconds((string) $file->getRealPath())
+            : null;
 
         $path = $file->store('question-attachments', 'public');
 

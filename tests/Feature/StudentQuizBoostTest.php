@@ -55,7 +55,7 @@ class StudentQuizBoostTest extends TestCase
             'context_label' => 'Quiz: Math',
         ])->assertOk()
             ->assertJsonPath('data.effect_config.correct_answer', '4')
-            ->assertJsonPath('data.effect_config.reveal_seconds', 5)
+            ->assertJsonPath('data.effect_config.reveal_seconds', 3)
             ->assertJsonPath('data.remaining_quantity', 0);
 
         $this->postJson('/api/student/inventory/consume', [
@@ -115,6 +115,65 @@ class StudentQuizBoostTest extends TestCase
             'quiz_question_id' => $question->id,
         ])->assertUnprocessable();
         $this->assertSame(1, $student->fresh()->inventory()->where('shop_item_id', $item->id)->value('quantity'));
+    }
+
+    public function test_shop_catalog_exposes_only_allowed_tools_avatars_and_borders(): void
+    {
+        (new ShopItemSeeder())->run();
+        [$user] = $this->createStudentAndQuiz();
+
+        $response = $this->actingAs($user, 'sanctum')
+            ->getJson('/api/student/shop/items')
+            ->assertOk();
+
+        $items = collect($response->json('data'));
+        $boosterSlugs = $items->where('category', 'booster')->pluck('slug')->sort()->values()->all();
+        $this->assertSame(['extra_time', 'quiz_hint'], $boosterSlugs);
+        $this->assertSame(3, $items->firstWhere('slug', 'quiz_hint')['effect_config']['reveal_seconds']);
+
+        foreach (['double_stars', 'skip_question', 'fast_learner', 'star_backpack', 'cool_cap', 'mystery_box'] as $removedSlug) {
+            $this->assertNull($items->firstWhere('slug', $removedSlug));
+        }
+
+        $this->assertGreaterThan(0, $items->where('category', 'character')->count());
+        $this->assertGreaterThan(0, $items->where('category', 'border')->count());
+        $this->assertSame(0, $items->where('category', 'funItem')->count());
+    }
+
+    public function test_student_can_purchase_and_equip_avatar_border_and_receive_it_across_endpoints(): void
+    {
+        (new ShopItemSeeder())->run();
+        [$user, $student] = $this->createStudentAndQuiz();
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/student/shop/equip-border', ['item_slug' => 'gold_crown_border'])
+            ->assertForbidden();
+
+        $this->postJson('/api/student/shop/purchase', ['item_slug' => 'quiz_hint'])->assertOk();
+        $this->postJson('/api/student/shop/equip-border', ['item_slug' => 'quiz_hint'])
+            ->assertUnprocessable();
+
+        $this->postJson('/api/student/shop/purchase', ['item_slug' => 'gold_crown_border'])->assertOk();
+        $this->postJson('/api/student/shop/equip-border', ['item_slug' => 'gold_crown_border'])
+            ->assertOk()
+            ->assertJsonPath('data.equipped_border_slug', 'gold_crown_border')
+            ->assertJsonPath('data.equipped_border_config.type', 'border');
+
+        $this->assertSame('gold_crown_border', $student->fresh()->equipped_border_slug);
+
+        $this->getJson('/api/student/wallet')
+            ->assertOk()
+            ->assertJsonPath('data.equipped_border_slug', 'gold_crown_border')
+            ->assertJsonPath('data.equipped_border_config.type', 'border');
+
+        $this->getJson('/api/me')
+            ->assertOk()
+            ->assertJsonPath('data.equipped_border_slug', 'gold_crown_border')
+            ->assertJsonPath('data.equipped_border_config.type', 'border');
+
+        $this->postJson('/api/student/shop/equip-border', ['item_slug' => null])
+            ->assertOk()
+            ->assertJsonPath('data.equipped_border_slug', null);
     }
 
     private function createStudentAndQuiz(): array

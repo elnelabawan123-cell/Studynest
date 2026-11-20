@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Concerns\FormatsTitleCaseForDisplay;
 
@@ -116,6 +117,40 @@ class Lesson extends Model
     public function getFileUrlAttribute(): ?string
     {
         return StorageFileUrl::forPath($this->file_path);
+    }
+
+    /**
+     * Normalize incoming ISO-8601 strings (including UTC "Z" timestamps from
+     * JS `.toISOString()`) to the configured app timezone before persisting so
+     * MySQL DATETIME never drops the timezone offset and shifts by 8 hours.
+     */
+    public function setScheduledAtAttribute(mixed $value): void
+    {
+        $this->attributes['scheduled_at'] = $this->normalizeDatetimeForStorage($value);
+    }
+
+    public function setPublishedAtAttribute(mixed $value): void
+    {
+        $this->attributes['published_at'] = $this->normalizeDatetimeForStorage($value);
+    }
+
+    private function normalizeDatetimeForStorage(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $timezone = config('app.timezone', 'Asia/Manila');
+
+        if ($value instanceof \DateTimeInterface) {
+            return Carbon::instance($value)
+                ->setTimezone($timezone)
+                ->format($this->getDateFormat());
+        }
+
+        return Carbon::parse((string) $value, $timezone)
+            ->setTimezone($timezone)
+            ->format($this->getDateFormat());
     }
 
     /** True once scheduled_at is in the past but status hasn't flipped yet. */

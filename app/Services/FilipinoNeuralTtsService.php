@@ -546,3 +546,4 @@ class FilipinoNeuralTtsService
         return [$cs64Hex, strtoupper(bin2hex($digest))];
     }
 }
+

@@ -40,7 +40,7 @@ class StoreLessonRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'file.max'                 => 'Files must be 100MB or smaller. Photos are limited to 5MB and videos to 50MB.',
+            'file.max'                 => 'The file exceeds the 100 MB limit (documents and slides: 100MB, videos: 50MB, photos: 5MB).',
             'file.mimes'               => 'Allowed formats: JPG, PNG, WEBP, PPT, PPTX, DOCX, PDF, MP4, MOV, AVI, KEY.',
             'scheduled_at.required_if' => 'Please choose a publish date and time.',
         ];

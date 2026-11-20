@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Lesson;
+use App\Services\ScheduledContentSyncService;
 use Illuminate\Console\Command;
 
 /**
@@ -16,25 +16,21 @@ class PublishScheduledLessons extends Command
 
     protected $description = 'Publish scheduled lessons whose publish date/time has arrived';
 
-    public function handle(): int
+    public function handle(ScheduledContentSyncService $scheduledSync): int
     {
-        $due = Lesson::dueForPublish()->get();
+        $published = $scheduledSync->publishDueLessons();
 
-        if ($due->isEmpty()) {
+        if ($published === []) {
             $this->info('No lessons due for publishing.');
             return self::SUCCESS;
         }
 
-        foreach ($due as $lesson) {
-            $lesson->update([
-                'status'       => 'published',
-                'published_at' => now(),
-            ]);
-
+        foreach ($published as $lesson) {
             $this->info("Published lesson #{$lesson->id}: \"{$lesson->title}\"");
         }
 
-        $this->info("Published {$due->count()} lesson(s).");
+        $count = count($published);
+        $this->info("Published {$count} lesson(s).");
 
         return self::SUCCESS;
     }

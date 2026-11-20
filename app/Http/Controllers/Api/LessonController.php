@@ -8,6 +8,9 @@ use App\Http\Resources\LessonResource;
 use App\Models\ActivityLog;
 use App\Models\AuditLog;
 use App\Models\Lesson;
+use App\Services\ScheduledContentSyncService;
+use App\Services\StaffNotificationSyncService;
+use App\Services\StudentNotificationSyncService;
 use App\Support\MediaUploadLimits;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,8 +20,14 @@ use Illuminate\Support\Facades\Storage;
 
 class LessonController extends Controller
 {
+    public function __construct(
+        private readonly StudentNotificationSyncService $notificationSync,
+        private readonly ScheduledContentSyncService $scheduledSync,
+    ) {}
     public function index(Request $request): JsonResponse
     {
+        $this->scheduledSync->publishDueLessons();
+
         $teacherId = $request->user()->id;
 
         $query = Lesson::with('subject')->forTeacher($teacherId);
@@ -76,12 +85,16 @@ class LessonController extends Controller
         $lesson = Lesson::create($data);
         $user   = $request->user();
 
+        if ($lesson->status === 'published') {
+            $this->notificationSync->dispatchForLesson($lesson);
+        }
+
         $isPublished = $lesson->status === 'published';
 
         // Friendly bell text vs. formal audit text
         $notifText = $isPublished
             ? "You uploaded and published lesson \"{$lesson->title}\"."
-            : "You uploaded lesson \"{$lesson->title}\" â€” scheduled for {$lesson->scheduled_at?->format('M j, Y g:i A')}.";
+            : "You uploaded lesson \"{$lesson->title}\" — scheduled for {$lesson->scheduled_at?->format('M j, Y g:i A')}.";
         $auditText = $isPublished
             ? "Teacher \"{$user->name}\" uploaded and published lesson \"{$lesson->title}\" (ID: {$lesson->id})."
             : "Teacher \"{$user->name}\" uploaded lesson \"{$lesson->title}\" (ID: {$lesson->id}), scheduled for {$lesson->scheduled_at?->format('M j, Y g:i A')}.";
@@ -172,12 +185,16 @@ class LessonController extends Controller
         $lesson->update($data);
         $user = $request->user();
 
+        if ($wasPublishedNow) {
+            $this->notificationSync->dispatchForLesson($lesson);
+        }
+
         // Friendly bell text vs. formal audit text
         $notifText = $wasPublishedNow
             ? "You edited and published lesson \"{$lesson->title}\"."
             : ($wasAlreadyPublished
                 ? "You edited lesson \"{$lesson->title}\"."
-                : "You edited lesson \"{$lesson->title}\" â€” scheduled for {$lesson->scheduled_at?->format('M j, Y g:i A')}.");
+                : "You edited lesson \"{$lesson->title}\" — scheduled for {$lesson->scheduled_at?->format('M j, Y g:i A')}.");
 
         $auditText = $wasPublishedNow
             ? "Teacher \"{$user->name}\" edited and published lesson \"{$lesson->title}\" (ID: {$lesson->id})."
@@ -209,36 +226,15 @@ class LessonController extends Controller
 
     private function validateMediaLimits(\Illuminate\Http\UploadedFile $file): ?JsonResponse
     {
-        $extension = strtolower($file->getClientOriginalExtension());
-
-        if (in_array($extension, ['jpg', 'jpeg', 'png', 'webp'], true)
-            && $file->getSize() > MediaUploadLimits::MAX_IMAGE_BYTES) {
-            return response()->json(['message' => 'Photos must be 5MB or smaller.'], 422);
-        }
-
-        if (in_array($extension, ['mp4', 'mov', 'avi'], true)) {
-            if ($file->getSize() > MediaUploadLimits::MAX_VIDEO_BYTES) {
-                return response()->json(['message' => 'Videos must be 50MB or smaller.'], 422);
-            }
-
-            $duration = MediaUploadLimits::videoDurationSeconds($file->getRealPath());
-            if ($duration === null) {
-                return response()->json([
-                    'message' => 'Could not read that video\'s length â€” please try a different file.',
-                ], 422);
-            }
-            if ($duration > MediaUploadLimits::MAX_VIDEO_SECONDS) {
-                return response()->json([
-                    'message' => 'Videos must be 5 minutes or shorter. This one is ' .
-                        gmdate('i:s', (int) round($duration)) . ' long.',
-                ], 422);
-            }
+        $error = MediaUploadLimits::validateUploadedFile($file, ['mp4', 'mov', 'avi']);
+        if ($error !== null) {
+            return response()->json(['message' => $error], 422);
         }
 
         return null;
     }
 
-    // â”€â”€ DELETE /api/teacher/lessons/{lesson} â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── DELETE /api/teacher/lessons/{lesson} ──────────────────────────────────
     public function destroy(Request $request, Lesson $lesson): JsonResponse
     {
         $this->authorizeTeacher($request, $lesson);
@@ -259,6 +255,8 @@ class LessonController extends Controller
         }
 
         $lesson->delete();
+        $this->notificationSync->removeForTarget('lesson', $lessonId);
+        app(StaffNotificationSyncService::class)->removeForLesson($lessonId);
 
         // Friendly bell text vs. formal audit text
         $notifText = "You deleted lesson \"{$title}\".";

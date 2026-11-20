@@ -39,4 +39,13 @@ return Application::configure(basePath: dirname(__DIR__))
                 ], 422);
             }
         });
+
+        $exceptions->render(function (\Illuminate\Http\Exceptions\PostTooLargeException $e, $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'The uploaded file exceeds the allowed upload limit (Photos: 5 MB, Videos: 50 MB / 5 minutes, Documents & Slides: 100 MB).',
+                ], 413);
+            }
+        });
     })->create();

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\AdminSetting;
 use App\Models\AuditLog;
+use App\Services\StaffNotificationSyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
  
@@ -113,7 +114,7 @@ class AdminsettingController extends Controller
         $request->validate(['enabled' => 'required|boolean']);
         $enabled = $request->boolean('enabled');
  
-        $old = AdminSetting::get('maintenance_mode', false);
+        $old = (bool) AdminSetting::get('maintenance_mode', false);
         AdminSetting::set('maintenance_mode', $enabled);
  
         $label = $enabled ? 'enabled' : 'disabled';
@@ -126,6 +127,10 @@ class AdminsettingController extends Controller
             ['maintenance_mode' => $enabled],
             "Maintenance Mode {$label} by admin."
         );
+
+        if ($old !== $enabled) {
+            app(StaffNotificationSyncService::class)->dispatchSettingChanged('maintenance_mode', $enabled, $request->user());
+        }
  
         return response()->json([
             'success' => true,
@@ -141,9 +146,11 @@ class AdminsettingController extends Controller
  
         foreach ($data as $key => $newVal) {
             $oldVal = AdminSetting::get($key);
-            if ($oldVal !== $newVal) {
-                $changed[$key] = ['old' => $oldVal, 'new' => $newVal];
-                AdminSetting::set($key, $newVal);
+            $normalizedNew = self::SCHEMA[$key]['type'] === 'boolean' ? (bool) $newVal : $newVal;
+            $normalizedOld = self::SCHEMA[$key]['type'] === 'boolean' ? (bool) $oldVal : $oldVal;
+            if ($normalizedOld !== $normalizedNew) {
+                $changed[$key] = ['old' => $oldVal, 'new' => $normalizedNew];
+                AdminSetting::set($key, $normalizedNew);
             }
         }
  
@@ -156,6 +163,7 @@ class AdminsettingController extends Controller
  
             ActivityLog::record('updated', 'Settings', "Admin updated settings: {$summary}.");
  
+            $staffNotifSync = app(StaffNotificationSyncService::class);
             foreach ($changed as $key => $c) {
                 AuditLog::record(
                     'updated', 'admin_settings', null,
@@ -163,6 +171,9 @@ class AdminsettingController extends Controller
                     [$key => $c['new']],
                     "Setting '{$key}' changed from {$this->fmt($c['old'])} to {$this->fmt($c['new'])}."
                 );
+                if (is_bool($c['new'])) {
+                    $staffNotifSync->dispatchSettingChanged($key, $c['new'], request()->user());
+                }
             }
         }
  

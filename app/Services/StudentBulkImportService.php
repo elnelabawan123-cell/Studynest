@@ -111,13 +111,24 @@ class StudentBulkImportService
      */
     private function readFirstTableRows(string $absolutePath): array
     {
-        $archive = new \ZipArchive();
-        if ($archive->open($absolutePath) !== true) {
-            throw new \RuntimeException('The uploaded Word document could not be opened.');
-        }
+        if (class_exists(\ZipArchive::class)) {
+            $archive = new \ZipArchive();
+            if ($archive->open($absolutePath) !== true) {
+                throw new \RuntimeException('The uploaded Word document could not be opened.');
+            }
 
-        $documentXml = $archive->getFromName('word/document.xml');
-        $archive->close();
+            $documentXml = $archive->getFromName('word/document.xml');
+            $archive->close();
+        } else {
+            \PhpOffice\PhpWord\Settings::setZipClass(\PhpOffice\PhpWord\Settings::PCLZIP);
+            $archive = new \PhpOffice\PhpWord\Shared\ZipArchive();
+            if ($archive->open($absolutePath) !== true || $archive->numFiles === 0) {
+                throw new \RuntimeException('The uploaded Word document could not be opened.');
+            }
+
+            $documentXml = $archive->getFromName('word/document.xml');
+            $archive->close();
+        }
         if (! is_string($documentXml)) {
             throw new \RuntimeException('The uploaded Word document has no document content.');
         }

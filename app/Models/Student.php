@@ -18,7 +18,7 @@ class Student extends Model
         'user_id', 'student_number',
         'first_name', 'middle_name', 'last_name', 'suffix',
         'email', 'grade', 'section_id', 'gpa', 'status',
-        'stars_balance', 'equipped_avatar_slug',
+        'stars_balance', 'equipped_avatar_slug', 'equipped_border_slug',
     ];
 
     protected $casts = [
@@ -91,6 +91,32 @@ class Student extends Model
     public function teachers(){ return $this->belongsToMany(Teacher::class, 'teacher_student'); }
     public function starTransactions() { return $this->hasMany(StarTransaction::class); }
     public function inventory() { return $this->hasMany(StudentInventory::class); }
+
+    /**
+     * Resolve equipped avatar emoji and border style configuration in one lookup
+     * so AuthController and StudentWalletController share a single contract.
+     */
+    public function equippedCosmeticsPayload(): array
+    {
+        $slugs = array_values(array_filter([
+            $this->equipped_avatar_slug,
+            $this->equipped_border_slug,
+        ]));
+
+        $items = empty($slugs)
+            ? collect()
+            : ShopItem::whereIn('slug', $slugs)->get()->keyBy('slug');
+
+        $avatarItem = $this->equipped_avatar_slug ? $items->get($this->equipped_avatar_slug) : null;
+        $borderItem = $this->equipped_border_slug ? $items->get($this->equipped_border_slug) : null;
+
+        return [
+            'equipped_avatar_slug' => $this->equipped_avatar_slug,
+            'equipped_avatar_emoji' => $avatarItem?->emoji,
+            'equipped_border_slug' => $this->equipped_border_slug,
+            'equipped_border_config' => $borderItem?->effect_config,
+        ];
+    }
 
     
     public function schoolYear()

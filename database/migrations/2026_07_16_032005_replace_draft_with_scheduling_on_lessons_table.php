@@ -18,7 +18,11 @@ return new class extends Migration
     public function up(): void
     {
         // Step 1: widen the enum so existing 'draft' rows remain valid while we migrate them.
-        if (DB::getDriverName() !== 'sqlite') {
+        if (DB::getDriverName() === 'sqlite') {
+            Schema::table('lessons', function (Blueprint $table) {
+                $table->string('status', 20)->default('scheduled')->change();
+            });
+        } else {
             DB::statement("ALTER TABLE lessons MODIFY COLUMN status ENUM('draft','scheduled','published') NOT NULL DEFAULT 'scheduled'");
         }
 

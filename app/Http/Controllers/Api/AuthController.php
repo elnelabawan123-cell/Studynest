@@ -85,10 +85,7 @@ class AuthController extends BaseApiController
             $userData['section']        = $profile->section?->name;
             $userData['gpa']            = $profile->gpa;
             $userData['status']         = $profile->status;
-            $userData['equipped_avatar_slug']  = $profile->equipped_avatar_slug;
-            $userData['equipped_avatar_emoji'] = $profile->equipped_avatar_slug
-                ? \App\Models\ShopItem::where('slug', $profile->equipped_avatar_slug)->value('emoji')
-                : null;
+            $userData = array_merge($userData, $profile->equippedCosmeticsPayload());
         }
 
         // â”€â”€ Activity log â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -138,10 +135,7 @@ class AuthController extends BaseApiController
             $userData['grade']          = $profile->grade;
             $userData['section']        = $profile->section?->name;
             $userData['status']         = $profile->status;
-            $userData['equipped_avatar_slug']  = $profile->equipped_avatar_slug;
-            $userData['equipped_avatar_emoji'] = $profile->equipped_avatar_slug
-                ? \App\Models\ShopItem::where('slug', $profile->equipped_avatar_slug)->value('emoji')
-                : null;
+            $userData = array_merge($userData, $profile->equippedCosmeticsPayload());
         }
 
         return $this->success($userData);

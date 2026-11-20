@@ -85,16 +85,58 @@ class StudentShopController extends BaseApiController
     // unlike spending a booster.
     public function equipAvatar(Request $request): JsonResponse
     {
+        return $this->equipCosmetic(
+            $request,
+            category: 'character',
+            column: 'equipped_avatar_slug',
+            wrongCategoryMessage: 'This item cannot be used as a profile picture.',
+            unownedMessage: "You don't own this avatar yet.",
+            successMessage: 'Avatar equipped.',
+        );
+    }
+
+    // ── POST /api/student/shop/equip-border ───────────────────────────────
+    // Equips an owned "border" item around the student's profile avatar, or
+    // clears it when item_slug is null/empty.
+    public function equipBorder(Request $request): JsonResponse
+    {
+        return $this->equipCosmetic(
+            $request,
+            category: 'border',
+            column: 'equipped_border_slug',
+            wrongCategoryMessage: 'This item cannot be used as an avatar border.',
+            unownedMessage: "You don't own this avatar border yet.",
+            successMessage: 'Avatar border updated.',
+            allowUnequip: true,
+        );
+    }
+
+    private function equipCosmetic(
+        Request $request,
+        string $category,
+        string $column,
+        string $wrongCategoryMessage,
+        string $unownedMessage,
+        string $successMessage,
+        bool $allowUnequip = false,
+    ): JsonResponse {
         $student = $request->user()->studentProfile;
         abort_unless($student, 403, 'No student profile found for this account.');
 
         $data = $request->validate([
-            'item_slug' => 'required|string|exists:shop_items,slug',
+            'item_slug' => ($allowUnequip ? 'nullable' : 'required') . '|string|exists:shop_items,slug',
         ]);
 
-        $item = ShopItem::where('slug', $data['item_slug'])->where('is_active', true)->first();
-        if (!$item || $item->category !== 'character') {
-            return $this->error('This item cannot be used as a profile picture.', 422);
+        $slug = $data['item_slug'] ?? null;
+        if ($allowUnequip && ($slug === null || trim($slug) === '')) {
+            $student->update([$column => null]);
+
+            return $this->success($student->fresh()->equippedCosmeticsPayload(), $successMessage);
+        }
+
+        $item = ShopItem::where('slug', $slug)->where('is_active', true)->first();
+        if (!$item || $item->category !== $category) {
+            return $this->error($wrongCategoryMessage, 422);
         }
 
         $owned = StudentInventory::where('student_id', $student->id)
@@ -102,14 +144,11 @@ class StudentShopController extends BaseApiController
             ->where('quantity', '>', 0)
             ->exists();
         if (!$owned) {
-            return $this->error("You don't own this avatar yet.", 403);
+            return $this->error($unownedMessage, 403);
         }
 
-        $student->update(['equipped_avatar_slug' => $item->slug]);
+        $student->update([$column => $item->slug]);
 
-        return $this->success([
-            'equipped_avatar_slug' => $item->slug,
-            'equipped_avatar_emoji' => $item->emoji,
-        ], 'Avatar equipped.');
+        return $this->success($student->fresh()->equippedCosmeticsPayload(), $successMessage);
     }
 }

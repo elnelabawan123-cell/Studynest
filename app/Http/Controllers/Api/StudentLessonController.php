@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Models\Lesson;
 use App\Models\LessonActivityLog;
+use App\Services\ScheduledContentSyncService;
+use App\Services\StaffNotificationSyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -14,6 +16,8 @@ class StudentLessonController extends BaseApiController
     // GET /api/student/lessons?subject_id=
     public function index(Request $request): JsonResponse
     {
+        app(ScheduledContentSyncService::class)->publishDueLessons();
+
         $studentProfile = $request->user()->studentProfile;
         abort_unless($studentProfile, 403, 'No student profile found for this account.');
 
@@ -224,6 +228,8 @@ class StudentLessonController extends BaseApiController
             $lesson->increment($type === 'view' ? 'views' : 'downloads');
         }
 
+        app(StaffNotificationSyncService::class)->dispatchLessonActivity($lesson, $studentProfile, $type);
+
         return $this->success(null, ucfirst($type) . ' recorded.');
     }
 
@@ -234,6 +240,12 @@ class StudentLessonController extends BaseApiController
 
         $enrolled = $lesson->subject->students()->where('students.id', $studentProfile->id)->exists();
         abort_unless($enrolled, 403, 'This lesson is not assigned to your class.');
+
+        if ($lesson->status === 'scheduled' && $lesson->scheduled_at !== null && $lesson->scheduled_at->lte(now())) {
+            app(ScheduledContentSyncService::class)->publishDueLessons();
+            $lesson->refresh();
+        }
+
         abort_unless($lesson->status === 'published', 403, 'This lesson is not published yet.');
 
         return $studentProfile;

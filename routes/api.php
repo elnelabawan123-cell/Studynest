@@ -38,6 +38,7 @@ use App\Http\Controllers\Api\GameContentController;
 use App\Http\Controllers\Api\StudentWalletController;
 use App\Http\Controllers\Api\StudentShopController;
 use App\Http\Controllers\Api\StudentInventoryController;
+use App\Http\Controllers\Api\StudentNotificationController;
 use App\Http\Controllers\Api\AiVoiceController;
 
 
@@ -81,8 +82,17 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('/student/shop/items',               [StudentShopController::class, 'items']);
         Route::post('/student/shop/purchase',           [StudentShopController::class, 'purchase']);
         Route::post('/student/shop/equip-avatar',       [StudentShopController::class, 'equipAvatar']);
+        Route::post('/student/shop/equip-border',       [StudentShopController::class, 'equipBorder']);
         Route::get('/student/inventory',                [StudentInventoryController::class, 'index']);
         Route::post('/student/inventory/consume',       [StudentInventoryController::class, 'consume']);
+
+        // Student notifications (persisted read/dismiss/clear state)
+        Route::get   ('/student/notifications',                     [StudentNotificationController::class, 'index']);
+        Route::post  ('/student/notifications/read-all',            [StudentNotificationController::class, 'markAllRead']);
+        Route::post  ('/student/notifications/clear-all',           [StudentNotificationController::class, 'clearAll']);
+        Route::delete('/student/notifications',                     [StudentNotificationController::class, 'clearAll']);
+        Route::post  ('/student/notifications/{notification}/read', [StudentNotificationController::class, 'markRead']);
+        Route::delete('/student/notifications/{notificationId}',    [StudentNotificationController::class, 'destroy']);
 
         Route::middleware('throttle:20,1')->group(function () {
             // PDF/video streaming + per-student view/download tracking
@@ -188,8 +198,12 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::post('change-password', [AdminpasswordController::class, 'changePassword']);
 
         // Admin Notifications
-        Route::get ('admin/notifications',          [AdminnotificationController::class, 'index']);
-        Route::post('admin/notifications/read-all', [AdminnotificationController::class, 'markAllRead']);
+        Route::get   ('admin/notifications',                    [AdminnotificationController::class, 'index']);
+        Route::post  ('admin/notifications/read-all',           [AdminnotificationController::class, 'markAllRead']);
+        Route::post  ('admin/notifications/clear-all',          [AdminnotificationController::class, 'clearAll']);
+        Route::delete('admin/notifications',                    [AdminnotificationController::class, 'clearAll']);
+        Route::post  ('admin/notifications/{notification}/read', [AdminnotificationController::class, 'markRead']);
+        Route::delete('admin/notifications/{notification}',     [AdminnotificationController::class, 'destroy']);
 
         Route::prefix('admin/reports/principal')->group(function () {
     Route::get('school-overview',     [PrincipalReportController::class, 'schoolOverview']);
@@ -202,6 +216,12 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 Route::get('student-accounts/bulk-upload/template', [StudentBulkController::class, 'template']);
 Route::post('student-accounts/bulk-upload/preview', [StudentBulkController::class, 'preview']);
 Route::post('student-accounts/bulk-upload/commit',  [StudentBulkController::class, 'commit']);
+
+        // Configurable mini-game & curriculum content across all grades (admin only — 2D & 3D questions, answers, topics)
+        Route::get    ('game-content',           [GameContentController::class, 'index']);
+        Route::get    ('game-content/{gameKey}', [GameContentController::class, 'show']);
+        Route::put    ('game-content/{gameKey}', [GameContentController::class, 'update']);
+        Route::delete ('game-content/{gameKey}', [GameContentController::class, 'destroy']);
     });
 
     // ── Teacher only ──────────────────────────────────────────
@@ -251,8 +271,12 @@ Route::post('student-accounts/bulk-upload/commit',  [StudentBulkController::clas
         Route::get('/lessons/{lesson}/activity', [TeacherLessonActivityController::class, 'index']);
 
         // Notifications
-        Route::get ('/notifications',          [NotificationController::class, 'index']);
-        Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead']);
+        Route::get   ('/notifications',                      [NotificationController::class, 'index']);
+        Route::post  ('/notifications/read-all',             [NotificationController::class, 'markAllRead']);
+        Route::post  ('/notifications/clear-all',            [NotificationController::class, 'clearAll']);
+        Route::delete('/notifications',                      [NotificationController::class, 'clearAll']);
+        Route::post  ('/notifications/{notification}/read',  [NotificationController::class, 'markRead']);
+        Route::delete('/notifications/{notification}',       [NotificationController::class, 'destroy']);
 
         // Activity submissions & grading
         Route::get ('/activities/{activity}/submissions',   [SubmissionController::class, 'index']);
@@ -281,12 +305,6 @@ Route::post('student-accounts/bulk-upload/commit',  [StudentBulkController::clas
         Route::post('2fa/enable',        [TwoFactorController::class, 'enable']);
         Route::post('2fa/confirm-setup', [TwoFactorController::class, 'confirmSetup']);
         Route::post('2fa/disable',       [TwoFactorController::class, 'disable']);
-
-        // Configurable mini-game & curriculum content across all grades (updateable without rebuilding APK)
-        Route::get    ('game-content',           [GameContentController::class, 'index']);
-        Route::get    ('game-content/{gameKey}', [GameContentController::class, 'show']);
-        Route::put    ('game-content/{gameKey}', [GameContentController::class, 'update']);
-        Route::delete ('game-content/{gameKey}', [GameContentController::class, 'destroy']);
     });
 
 });

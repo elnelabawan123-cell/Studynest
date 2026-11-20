@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Models\Activity;
 use App\Models\Submission;
+use App\Services\ScheduledContentSyncService;
 use App\Support\StorageFileUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,6 +14,8 @@ class StudentActivityController extends BaseApiController
     // GET /api/student/activities?subject_id=&type=Assignment
     public function index(Request $request): JsonResponse
     {
+        app(ScheduledContentSyncService::class)->openDueActivities();
+
         $studentProfile = $request->user()->studentProfile;
         abort_unless($studentProfile, 403, 'No student profile found for this account.');
 

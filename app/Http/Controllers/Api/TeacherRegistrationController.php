@@ -9,6 +9,7 @@ use App\Models\AuditLog;
 use App\Models\Teacher;
 use App\Models\User;
 use App\Services\AdminAlertMailer;
+use App\Services\StaffNotificationSyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -79,6 +80,7 @@ class TeacherRegistrationController extends BaseApiController
         );
 
         ActivityLog::record('created', 'Teacher Registration', "Teacher {$name} submitted a registration request.");
+        app(StaffNotificationSyncService::class)->dispatchTeacherRegistrationRequest($registration);
 
         return $this->success([
             'request_id' => $registration,
@@ -155,6 +157,7 @@ class TeacherRegistrationController extends BaseApiController
         });
 
         ActivityLog::record('approved', 'Teacher Registration', "Admin approved teacher registration for {$teacher['name']}.");
+        app(StaffNotificationSyncService::class)->clearTeacherRegistrationRequest($id);
         AuditLog::record(
             'created',
             'users',
@@ -190,6 +193,7 @@ class TeacherRegistrationController extends BaseApiController
         }
 
         ActivityLog::record('rejected', 'Teacher Registration', "Admin rejected teacher registration #{$id}.");
+        app(StaffNotificationSyncService::class)->clearTeacherRegistrationRequest($id);
         AuditLog::record(
             'updated',
             'teacher_registration_requests',

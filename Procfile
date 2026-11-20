@@ -1,1 +1,1 @@
-web: php artisan migrate --force && php artisan db:seed --class=DatabaseSeeder --force && php artisan storage:link --force && php artisan serve --host=0.0.0.0 --port=$PORT
+web: php artisan migrate --force && php artisan db:seed --class=DatabaseSeeder --force && php artisan storage:link --force && cd public && php -S 0.0.0.0:$PORT -d upload_max_filesize=110M -d post_max_size=120M -d memory_limit=256M ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php

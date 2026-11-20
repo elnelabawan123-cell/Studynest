@@ -6,6 +6,7 @@ use App\Models\Activity;
 use App\Models\Submission;
 use App\Models\SubmissionAnswer;
 use App\Services\ActivityGrader;
+use App\Services\StaffNotificationSyncService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -205,6 +206,7 @@ class StudentSubmissionController extends BaseApiController
         // 'graded' automatically if there's nothing left ungraded (e.g.
         // a pure Multiple Choice quiz never needs a teacher to touch it).
         $submission->recalculateScores();
+        app(StaffNotificationSyncService::class)->dispatchSubmissionForTeacher($submission->fresh());
 
         return $this->success($this->present($request, $submission->fresh('answers')));
     }

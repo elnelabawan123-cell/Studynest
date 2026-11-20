@@ -40,10 +40,10 @@ class LessonResource extends JsonResource
 
         'uploadedAt'    => optional($this->created_at)->format('M j, Y'),
 
-        // Raw ISO timestamps — the frontend needs these (not pre-formatted
-        // strings) to calculate countdowns and "published X ago" text.
-        'scheduled_at'  => optional($this->scheduled_at)->toISOString(),
-        'published_at'  => optional($this->published_at)->toISOString(),
+        // Explicit app-timezone ISO-8601 timestamps so countdowns and schedule
+        // pickers always match Asia/Manila accurately.
+        'scheduled_at'  => optional($this->scheduled_at)->toIso8601String(),
+        'published_at'  => optional($this->published_at)->toIso8601String(),
     ];
 }
 

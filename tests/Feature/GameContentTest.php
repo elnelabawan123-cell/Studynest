@@ -35,9 +35,18 @@ class GameContentTest extends TestCase
         }
     }
 
-    public function test_teacher_and_admin_can_update_game_content_and_student_receives_updates(): void
+    public function test_only_admin_can_update_game_content_and_student_receives_updates(): void
     {
         $this->withoutMiddleware(ThrottleRequests::class);
+
+        $adminUser = User::create([
+            'name' => 'School Admin',
+            'username' => 'admin_game_editor',
+            'email' => 'admin.games@studynest.test',
+            'password' => bcrypt('password'),
+            'role' => 'admin',
+            'is_active' => true,
+        ]);
 
         $teacherUser = User::create([
             'name' => 'Guro Filipino',
@@ -94,8 +103,30 @@ class GameContentTest extends TestCase
             ])
             ->assertStatus(403);
 
-        // Teacher rejects malformed syllable division
+        // Teacher cannot view, update, or reset 2D/3D game content
         $this->actingAs($teacherUser, 'sanctum')
+            ->getJson('/api/game-content')
+            ->assertStatus(403);
+        $this->actingAs($teacherUser, 'sanctum')
+            ->getJson('/api/game-content/g3m:0:6')
+            ->assertStatus(403);
+        $this->actingAs($teacherUser, 'sanctum')
+            ->putJson('/api/game-content/g3m:0:6', [
+                'topic' => 'Teacher Should Be Blocked',
+                'words' => [[
+                    'word' => 'AMA',
+                    'syllables' => ['A', 'MA'],
+                    'distractors' => ['BA', 'TO'],
+                    'difficulty' => 'easy',
+                ]],
+            ])
+            ->assertStatus(403);
+        $this->actingAs($teacherUser, 'sanctum')
+            ->deleteJson('/api/game-content/g3m:0:6')
+            ->assertStatus(403);
+
+        // Admin rejects malformed syllable division
+        $this->actingAs($adminUser, 'sanctum')
             ->putJson('/api/game-content/g3m:0:6', [
                 'words' => [[
                     'word' => 'PAMILYA',
@@ -106,8 +137,8 @@ class GameContentTest extends TestCase
             ])
             ->assertStatus(422);
 
-        // Teacher saves valid updated words
-        $this->actingAs($teacherUser, 'sanctum')
+        // Admin saves valid updated words
+        $this->actingAs($adminUser, 'sanctum')
             ->putJson('/api/game-content/g3m:0:6', [
                 'gameTitle' => 'Pantig Tower',
                 'words' => [
@@ -134,9 +165,18 @@ class GameContentTest extends TestCase
             ->assertJsonPath('data.content.words.0.syllableCount', 3);
     }
 
-    public function test_teacher_can_list_edit_bulk_sync_and_reset_all_grade_games(): void
+    public function test_only_admin_can_list_edit_bulk_sync_and_reset_all_grade_games(): void
     {
         $this->withoutMiddleware(ThrottleRequests::class);
+
+        $adminUser = User::create([
+            'name' => 'Admin All',
+            'username' => 'admin_all',
+            'email' => 'admin.all@studynest.test',
+            'password' => bcrypt('password'),
+            'role' => 'admin',
+            'is_active' => true,
+        ]);
 
         $teacherUser = User::create([
             'name' => 'Guro Filipino All',
@@ -174,8 +214,18 @@ class GameContentTest extends TestCase
             'stars_balance' => 0,
         ]);
 
-        // Teacher lists full Grade 1-6 catalog
-        $listRes = $this->actingAs($teacherUser, 'sanctum')
+        // Teacher cannot list or modify Grade 1-6 game catalog
+        $this->actingAs($teacherUser, 'sanctum')
+            ->getJson('/api/game-content')
+            ->assertStatus(403);
+        $this->actingAs($teacherUser, 'sanctum')
+            ->putJson('/api/game-content/g4:0:0', [
+                'topic' => 'Teacher Blocked Topic',
+            ])
+            ->assertStatus(403);
+
+        // Admin lists full Grade 1-6 catalog
+        $listRes = $this->actingAs($adminUser, 'sanctum')
             ->getJson('/api/game-content')
             ->assertOk();
 
@@ -183,7 +233,7 @@ class GameContentTest extends TestCase
         $this->assertGreaterThanOrEqual(140, $total);
 
         // Out-of-bounds correctIndex must be rejected
-        $this->actingAs($teacherUser, 'sanctum')
+        $this->actingAs($adminUser, 'sanctum')
             ->putJson('/api/game-content/g4:0:0', [
                 'topic' => 'Bagong Paksa',
                 'questions' => [[
@@ -194,8 +244,8 @@ class GameContentTest extends TestCase
             ])
             ->assertStatus(422);
 
-        // Teacher updates topic, lesson text, steps, and questions on Grade 4 Aralin 1
-        $this->actingAs($teacherUser, 'sanctum')
+        // Admin updates topic, lesson text, steps, and questions on Grade 4 Aralin 1
+        $this->actingAs($adminUser, 'sanctum')
             ->putJson('/api/game-content/g4:0:0', [
                 'title' => 'Bagong Pamagat ng Aralin',
                 'topic' => 'Bagong Paksa sa Kurikulum',
@@ -232,8 +282,8 @@ class GameContentTest extends TestCase
             ->assertJsonPath('data.count', 1)
             ->assertJsonPath('data.overrides.g4:0:0.title', 'Bagong Pamagat ng Aralin');
 
-        // Teacher resets back to default
-        $this->actingAs($teacherUser, 'sanctum')
+        // Admin resets back to default
+        $this->actingAs($adminUser, 'sanctum')
             ->deleteJson('/api/game-content/g4:0:0')
             ->assertOk()
             ->assertJsonPath('data.source', 'default');

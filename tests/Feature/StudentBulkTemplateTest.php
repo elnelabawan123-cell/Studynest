@@ -46,4 +46,39 @@ class StudentBulkTemplateTest extends TestCase
             }
         }
     }
+
+    public function test_principal_report_word_export_and_bulk_template_work_with_pclzip_fallback(): void
+    {
+        \PhpOffice\PhpWord\Settings::setZipClass(\PhpOffice\PhpWord\Settings::PCLZIP);
+
+        Section::create(['name' => 'Faith & Hope', 'grade_level' => 'Grade 1', 'is_active' => true]);
+
+        $templateResponse = (new StudentBulkController())->template();
+        $templatePath = $templateResponse->getFile()->getPathname();
+
+        try {
+            $this->assertFileExists($templatePath);
+            $this->assertGreaterThan(1000, filesize($templatePath));
+
+            $req = \Illuminate\Http\Request::create(
+                '/api/admin/reports/principal/export',
+                'GET',
+                ['report_type' => 'school_overview', 'format' => 'word']
+            );
+            $exportResponse = (new \App\Http\Controllers\Api\PrincipalReportController())->export($req);
+
+            ob_start();
+            $exportResponse->sendContent();
+            $docxBytes = ob_get_clean();
+
+            $this->assertIsString($docxBytes);
+            $this->assertGreaterThan(1000, strlen($docxBytes));
+            $this->assertSame('504b0304', bin2hex(substr($docxBytes, 0, 4)));
+        } finally {
+            if (is_file($templatePath)) {
+                @unlink($templatePath);
+            }
+            \PhpOffice\PhpWord\Settings::setZipClass(\PhpOffice\PhpWord\Settings::ZIPARCHIVE);
+        }
+    }
 }

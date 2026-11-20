@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Activity;
+use App\Services\ScheduledContentSyncService;
 use Illuminate\Console\Command;
 
 /**
@@ -19,30 +19,20 @@ class SyncActivityStatuses extends Command
 
     protected $description = 'Auto-open scheduled activities; teacher controls closing';
 
-    public function handle(): int
+    public function handle(ScheduledContentSyncService $scheduledSync): int
     {
-        $now = now();
-        $openedCount = 0;
+        $opened = $scheduledSync->openDueActivities();
 
-        // Scheduled → Open
-        Activity::where('status', 'Scheduled')
-            ->get()
-            ->each(function (Activity $activity) use ($now, &$openedCount) {
-                $openAt = \Carbon\Carbon::parse($activity->open_date->format('Y-m-d') . ' ' . $activity->open_time);
-                if ($openAt->lte($now)) {
-                    $activity->update(['status' => 'Open']);
-                    $openedCount++;
-                    $this->info("Opened #{$activity->id}: \"{$activity->title}\"");
-                }
-            });
-
-        if ($openedCount === 0) {
+        if ($opened === []) {
             $this->info('Nothing to update.');
         } else {
-            $this->info("Opened {$openedCount}.");
+            foreach ($opened as $activity) {
+                $this->info("Opened #{$activity->id}: \"{$activity->title}\"");
+            }
+            $count = count($opened);
+            $this->info("Opened {$count}.");
         }
 
         return self::SUCCESS;
     }
-
 }

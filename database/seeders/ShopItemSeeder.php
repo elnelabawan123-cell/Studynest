@@ -14,12 +14,13 @@ class ShopItemSeeder extends Seeder
             // actually consumes (see StudentInventoryController::consume).
             [
                 'slug' => 'quiz_hint',
-                'name' => 'Correct Answer Reveal',
-                'description' => 'Ipakita ang tamang sagot sa loob ng 5 segundo habang nagku-quiz.',
+                'name' => 'Show Answer (3s)',
+                'description' => 'Ipakita ang tamang sagot sa loob ng 3 segundo habang nagku-quiz.',
                 'emoji' => '💡',
                 'price' => 30,
                 'category' => 'booster',
-                'effect_config' => ['type' => 'hint', 'reveal_seconds' => 5],
+                'is_active' => true,
+                'effect_config' => ['type' => 'hint', 'reveal_seconds' => 3],
             ],
             [
                 'slug' => 'extra_time',
@@ -188,12 +189,132 @@ class ShopItemSeeder extends Seeder
                 'emoji' => '🐶',
                 'price' => 20,
                 'category' => 'character',
+                'is_active' => true,
                 'effect_config' => ['type' => 'cosmetic'],
+            ],
+            // ── Avatar Borders ───────────────────────────────────
+            [
+                'slug' => 'gold_crown_border',
+                'name' => 'Gold Crown Border',
+                'description' => 'Makintab na gintong frame para sa iyong profile avatar.',
+                'emoji' => '👑',
+                'price' => 25,
+                'category' => 'border',
+                'is_active' => true,
+                'effect_config' => [
+                    'type' => 'border',
+                    'colors' => ['#FBBF24', '#F59E0B', '#FEF08A'],
+                    'glow' => '#FBBF24',
+                    'width' => 3.5,
+                ],
+            ],
+            [
+                'slug' => 'royal_violet_border',
+                'name' => 'Royal Violet Glow',
+                'description' => 'Mahiwagang lilang border na kumikinang sa iyong profile.',
+                'emoji' => '🔮',
+                'price' => 25,
+                'category' => 'border',
+                'is_active' => true,
+                'effect_config' => [
+                    'type' => 'border',
+                    'colors' => ['#A855F7', '#6366F1', '#EC4899'],
+                    'glow' => '#A855F7',
+                    'width' => 3.5,
+                ],
+            ],
+            [
+                'slug' => 'ocean_wave_border',
+                'name' => 'Ocean Wave Frame',
+                'description' => 'Malamig at preskong asul na alon sa paligid ng avatar.',
+                'emoji' => '🌊',
+                'price' => 20,
+                'category' => 'border',
+                'is_active' => true,
+                'effect_config' => [
+                    'type' => 'border',
+                    'colors' => ['#06B6D4', '#3B82F6', '#67E8F9'],
+                    'glow' => '#38BDF8',
+                    'width' => 3.0,
+                ],
+            ],
+            [
+                'slug' => 'emerald_leaf_border',
+                'name' => 'Emerald Spark Frame',
+                'description' => 'Matingkad na berdeng border para sa masiglang estudyante.',
+                'emoji' => '🍀',
+                'price' => 20,
+                'category' => 'border',
+                'is_active' => true,
+                'effect_config' => [
+                    'type' => 'border',
+                    'colors' => ['#10B981', '#34D399', '#A7F3D0'],
+                    'glow' => '#10B981',
+                    'width' => 3.0,
+                ],
+            ],
+            [
+                'slug' => 'ruby_fire_border',
+                'name' => 'Blazing Fire Frame',
+                'description' => 'Nagbabagang apoy na frame para sa matapang na learner.',
+                'emoji' => '🔥',
+                'price' => 30,
+                'category' => 'border',
+                'is_active' => true,
+                'effect_config' => [
+                    'type' => 'border',
+                    'colors' => ['#EF4444', '#F97316', '#FACC15'],
+                    'glow' => '#F97316',
+                    'width' => 3.5,
+                ],
+            ],
+            [
+                'slug' => 'rainbow_star_border',
+                'name' => 'Rainbow Star Rim',
+                'description' => 'Makulay na bahaghari na border na may bituin.',
+                'emoji' => '🌈',
+                'price' => 40,
+                'category' => 'border',
+                'is_active' => true,
+                'effect_config' => [
+                    'type' => 'border',
+                    'colors' => ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#A855F7'],
+                    'glow' => '#8B5CF6',
+                    'width' => 4.0,
+                ],
             ],
         ];
 
         foreach ($items as $item) {
             ShopItem::updateOrCreate(['slug' => $item['slug']], $item);
         }
+
+        // Hide discontinued tools and non-avatar fun items without deleting rows
+        // so existing student_inventory and star_transactions records stay intact.
+        ShopItem::whereIn('slug', [
+            'double_stars',
+            'skip_question',
+            'fast_learner',
+            'star_backpack',
+            'cool_cap',
+            'mystery_box',
+        ])->update(['is_active' => false]);
+
+        // Ensure remaining shop tools reflect the updated 3-second answer reveal
+        // and Add Time naming cleanly even if legacy rows were previously seeded.
+        ShopItem::where('slug', 'quiz_hint')->update([
+            'name' => 'Show Answer (3s)',
+            'description' => 'Ipakita ang tamang sagot sa loob ng 3 segundo habang nagku-quiz.',
+            'price' => 30,
+            'is_active' => true,
+            'effect_config' => ['type' => 'hint', 'reveal_seconds' => 3],
+        ]);
+        ShopItem::where('slug', 'extra_time')->update([
+            'name' => 'Add Time',
+            'description' => 'Magdagdag ng 1 minuto sa oras ng iyong quiz.',
+            'price' => 30,
+            'is_active' => true,
+            'effect_config' => ['type' => 'extra_time', 'seconds' => 60],
+        ]);
     }
 }

@@ -9,6 +9,9 @@ use App\Http\Resources\ActivityResource;
 use App\Models\Activity;
 use App\Models\ActivityLog;
 use App\Models\AuditLog;
+use App\Services\ScheduledContentSyncService;
+use App\Services\StaffNotificationSyncService;
+use App\Services\StudentNotificationSyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -16,9 +19,15 @@ use Illuminate\Support\Facades\DB;
 
 class ActivityController extends Controller
 {
+    public function __construct(
+        private readonly StudentNotificationSyncService $notificationSync,
+        private readonly ScheduledContentSyncService $scheduledSync,
+    ) {}
     // â”€â”€ GET /api/teacher/activities â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public function index(Request $request): JsonResponse
     {
+        $this->scheduledSync->openDueActivities();
+
         $teacherId = $request->user()->id;
 
         $query = Activity::with(['subject', 'quizQuestions'])->forTeacher($teacherId);
@@ -63,6 +72,7 @@ class ActivityController extends Controller
         });
 
         $user = $request->user();
+        $this->notificationSync->dispatchForActivity($activity->fresh());
 
         // Friendly bell text vs. formal audit text
         $notifText = "You created {$activity->type} \"{$activity->title}\".";
@@ -145,6 +155,7 @@ class ActivityController extends Controller
         });
 
         $user = $request->user();
+        $this->notificationSync->dispatchForActivity($activity->fresh());
 
         // Friendly bell text vs. formal audit text
         $notifText = "You edited {$activity->type} \"{$activity->title}\".";
@@ -190,6 +201,8 @@ class ActivityController extends Controller
         ];
 
         $activity->delete();
+        $this->notificationSync->removeForTarget('activity', $actId);
+        app(StaffNotificationSyncService::class)->removeForActivity($actId);
 
         // Friendly bell text vs. formal audit text
         $notifText = "You deleted {$type} \"{$title}\".";
@@ -274,6 +287,10 @@ class ActivityController extends Controller
         $activity->update($next === 'Closed'
             ? ['status' => $next, 'is_closed' => true, 'closed_at' => now(), 'closed_by' => $user->id]
             : ['status' => $next, 'is_closed' => false, 'closed_at' => null, 'closed_by' => null]);
+
+        if ($next === 'Open') {
+            $this->notificationSync->dispatchForActivity($activity->fresh());
+        }
 
         // Friendly bell text vs. formal audit text
         $notifText = "You changed {$activity->type} \"{$activity->title}\" from {$oldStatus} to {$next}.";

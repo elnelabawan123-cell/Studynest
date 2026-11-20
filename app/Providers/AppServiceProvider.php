@@ -28,6 +28,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        \PhpOffice\PhpWord\Settings::setOutputEscapingEnabled(true);
+        if (! class_exists(\ZipArchive::class)) {
+            \PhpOffice\PhpWord\Settings::setZipClass(\PhpOffice\PhpWord\Settings::PCLZIP);
+        }
+
         Mail::extend('brevo', function (array $config = []): BrevoTransport {
             return new BrevoTransport(
                 apiKey: (string) config('services.brevo.key', ''),

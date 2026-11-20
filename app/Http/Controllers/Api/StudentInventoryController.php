@@ -111,7 +111,7 @@ class StudentInventoryController extends BaseApiController
                 $effect = $item->effect_config ?? [];
                 if ($effectType === 'hint') {
                     $effect['correct_answer'] = $question->correct_answer;
-                    $effect['reveal_seconds'] = 5;
+                    $effect['reveal_seconds'] = 3;
                 }
                 if ($effectType === 'extra_time') {
                     $effect['seconds'] = 60;

@@ -529,7 +529,7 @@ class SubjectController extends BaseApiController
 
         // Friendly text for the teacher's bell + Activity Log
         $notifText = "You removed {$student->full_name} from {$subject->name}"
-            . ($remarks !== '' ? " â€” {$remarks}." : ".");
+            . ($remarks !== '' ? " — {$remarks}." : ".");
 
         // Formal text for the admin Audit Log
         $auditText = "Teacher \"{$user->name}\" removed student \"{$student->full_name}\" (ID: {$student->id}) from subject \"{$subject->name}\""

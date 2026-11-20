@@ -8,4 +8,5 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
- Schedule::command('lessons:publish-scheduled')->everyMinute();
+Schedule::command('lessons:publish-scheduled')->everyMinute();
+Schedule::command('activities:sync-status')->everyMinute();

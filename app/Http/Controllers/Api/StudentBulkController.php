@@ -36,6 +36,11 @@ class StudentBulkController extends BaseApiController
     /** GET /api/student-accounts/bulk-upload/template */
     public function template(): BinaryFileResponse
     {
+        \PhpOffice\PhpWord\Settings::setOutputEscapingEnabled(true);
+        if (! class_exists(\ZipArchive::class)) {
+            \PhpOffice\PhpWord\Settings::setZipClass(\PhpOffice\PhpWord\Settings::PCLZIP);
+        }
+
         $phpWord = new PhpWord();
         $section = $phpWord->addSection();
         $activeSections = Section::query()
@@ -100,13 +105,22 @@ class StudentBulkController extends BaseApiController
                 ->setListItems($sectionOptions);
         }
 
+        if (! is_dir(storage_path('app'))) {
+            @mkdir(storage_path('app'), 0775, true);
+        }
         $fileName = 'student-bulk-upload-template.docx';
         $tmpPath  = storage_path('app/tmp_' . uniqid('tpl_', true) . '.docx');
 
         $writer = PhpWordIOFactory::createWriter($phpWord, 'Word2007');
         $writer->save($tmpPath);
 
-        return response()->download($tmpPath, $fileName)->deleteFileAfterSend(true);
+        if (ob_get_length()) {
+            ob_clean();
+        }
+
+        return response()->download($tmpPath, $fileName, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ])->deleteFileAfterSend(true);
     }
 
     /**
@@ -125,6 +139,8 @@ class StudentBulkController extends BaseApiController
                     }
                 },
             ],
+        ], [
+            'file.max' => 'The file exceeds the 10 MB upload limit for bulk .docx files.',
         ]);
 
         [$records, $error] = $this->parseUploadedFile($request);
@@ -164,6 +180,8 @@ class StudentBulkController extends BaseApiController
                     }
                 },
             ],
+        ], [
+            'file.max' => 'The file exceeds the 10 MB upload limit for bulk .docx files.',
         ]);
 
         [$records, $error] = $this->parseUploadedFile($request);
